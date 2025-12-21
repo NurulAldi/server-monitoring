@@ -23,10 +23,34 @@ class LayananChatbotAI {
    * Menganalisis data kesehatan server berdasarkan metrik yang diberikan
    * @param {Object} dataMetrik - Data metrik server (CPU, memory, dll.)
    * @param {string} pertanyaanPengguna - Pertanyaan spesifik pengguna
+   * @param {string} userId - ID pengguna yang bertanya
+   * @param {string} serverId - ID server yang dianalisis
    * @returns {string} Analisis dan penjelasan
    */
-  async analisisDataKesehatan(dataMetrik, pertanyaanPengguna, serverId = null) {
+  async analisisDataKesehatan(dataMetrik, pertanyaanPengguna, userId = null, serverId = null) {
+    let logId = null;
+    let sessionId = null;
+
     try {
+      // Import AI logging service
+      const aiLoggingService = require('./aiLoggingService');
+
+      // Start logging chatbot interaction
+      const loggingContext = await aiLoggingService.startChatbotInteractionLogging(
+        userId,
+        serverId,
+        {
+          prompt: pertanyaanPengguna,
+          serverInfo: serverId ? { id: serverId } : null,
+          metricsData: dataMetrik,
+          historicalData: null,
+          userContext: { questionType: 'server_analysis' }
+        }
+      );
+
+      sessionId = loggingContext.sessionId;
+      logId = loggingContext.logId;
+
       // Build context menggunakan shared service
       const context = await buildContext('chatbot', serverId, dataMetrik, pertanyaanPengguna);
 
@@ -45,19 +69,51 @@ class LayananChatbotAI {
       // Validate response menggunakan shared service
       const validation = validateResponse('chatbot', result.response);
 
+      // Complete logging dengan output AI
+      await aiLoggingService.completeChatbotInteractionLogging(
+        sessionId,
+        result.rawResponse || result.response,
+        validation.standardized,
+        {
+          confidence: validation.confidence || 0.8,
+          processingTime: result.processingTime || 0,
+          tokensUsed: result.usage || { total: result.usage?.total_tokens || 0 },
+          accuracy: 0.8,
+          relevance: 0.9,
+          actionability: 0.7,
+          timeliness: 0.9
+        }
+      );
+
       return {
         jawaban: validation.standardized,
         tokensUsed: result.usage?.total_tokens || 0,
         model: result.model,
-        isValid: validation.isValid
+        isValid: validation.isValid,
+        logId: logId
       };
     } catch (error) {
+      // Log error jika ada logId
+      if (logId && sessionId) {
+        try {
+          await aiLoggingService.logAIError(
+            logId,
+            'chatbot_analysis_error',
+            error.message,
+            'Fallback to standard error response'
+          );
+        } catch (logError) {
+          console.error('AI_ERROR_LOGGING_FAILED', logError);
+        }
+      }
+
       console.error('Error dalam analisis AI:', error);
       return {
         jawaban: 'Maaf, terjadi kesalahan dalam analisis data. Silakan coba lagi atau hubungi administrator.',
         tokensUsed: 0,
         model: 'error',
-        isValid: false
+        isValid: false,
+        logId: null
       };
     }
   }
@@ -65,10 +121,33 @@ class LayananChatbotAI {
   /**
    * Menjawab pertanyaan umum tentang sistem monitoring
    * @param {string} pertanyaan - Pertanyaan pengguna
+   * @param {string} userId - ID pengguna yang bertanya
    * @returns {string} Jawaban informatif
    */
-  async jawabPertanyaanUmum(pertanyaan) {
+  async jawabPertanyaanUmum(pertanyaan, userId = null) {
+    let logId = null;
+    let sessionId = null;
+
     try {
+      // Import AI logging service
+      const aiLoggingService = require('./aiLoggingService');
+
+      // Start logging chatbot interaction
+      const loggingContext = await aiLoggingService.startChatbotInteractionLogging(
+        userId,
+        null, // no specific server
+        {
+          prompt: pertanyaan,
+          serverInfo: null,
+          metricsData: null,
+          historicalData: null,
+          userContext: { questionType: 'general_question' }
+        }
+      );
+
+      sessionId = loggingContext.sessionId;
+      logId = loggingContext.logId;
+
       // Gunakan shared AI service untuk konsistensi
       const result = await executeAICompletion([
         { role: 'system', content: this.systemPrompt },
@@ -81,19 +160,51 @@ class LayananChatbotAI {
       // Validate response
       const validation = validateResponse('chatbot', result.response);
 
+      // Complete logging dengan output AI
+      await aiLoggingService.completeChatbotInteractionLogging(
+        sessionId,
+        result.rawResponse || result.response,
+        validation.standardized,
+        {
+          confidence: validation.confidence || 0.8,
+          processingTime: result.processingTime || 0,
+          tokensUsed: result.usage || { total: result.usage?.total_tokens || 0 },
+          accuracy: 0.8,
+          relevance: 0.9,
+          actionability: 0.6,
+          timeliness: 0.9
+        }
+      );
+
       return {
         jawaban: validation.standardized,
         tokensUsed: result.usage?.total_tokens || 0,
         model: result.model,
-        isValid: validation.isValid
+        isValid: validation.isValid,
+        logId: logId
       };
     } catch (error) {
+      // Log error jika ada logId
+      if (logId && sessionId) {
+        try {
+          await aiLoggingService.logAIError(
+            logId,
+            'chatbot_general_error',
+            error.message,
+            'Fallback to standard error response'
+          );
+        } catch (logError) {
+          console.error('AI_ERROR_LOGGING_FAILED', logError);
+        }
+      }
+
       console.error('Error dalam menjawab pertanyaan:', error);
       return {
         jawaban: 'Maaf, saya tidak dapat menjawab pertanyaan tersebut saat ini.',
         tokensUsed: 0,
         model: 'error',
-        isValid: false
+        isValid: false,
+        logId: null
       };
     }
   }

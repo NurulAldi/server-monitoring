@@ -28,6 +28,7 @@ const ruteChat = require('./rute/ruteChat');
 const ruteKonfigurasi = require('./rute/ruteKonfigurasi');
 const ruteAgregasi = require('./rute/ruteAgregasi');
 const ruteStatusServer = require('./rute/ruteStatusServer');
+const ruteAILogging = require('./rute/ruteAILogging');
 
 // Import Socket.IO handlers
 const { setupSocketHandlers } = require('./socket/index');
@@ -135,6 +136,7 @@ app.use('/api/chat', ruteChat);
 app.use('/api/konfigurasi', ruteKonfigurasi);
 app.use('/api/agregasi', ruteAgregasi);
 app.use('/api/status-server', ruteStatusServer);
+app.use('/api/ai-analytics', ruteAILogging);
 
 // 404 handler untuk route yang tidak ditemukan
 app.use('*', (req, res) => {

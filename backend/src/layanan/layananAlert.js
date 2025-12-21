@@ -565,8 +565,17 @@ async function lakukanAnalisisAI(ringkasanHealth, dataAI) {
     // Buat prompt untuk AI
     const prompt = buatPromptAnalisisAI(ringkasanHealth, alert, kondisi, server);
 
-    // Kirim ke AI untuk analisis
-    const responseAI = await layananAi.analisisKondisiServer(prompt);
+    // Siapkan context data untuk logging
+    const contextData = {
+      serverInfo: server,
+      metricsData: dataAI.metricsRealtime,
+      historicalData: dataAI.metricsHistoris,
+      alertInfo: alert,
+      conditionInfo: kondisi
+    };
+
+    // Kirim ke AI untuk analisis dengan logging
+    const responseAI = await layananAi.analisisKondisiServer(prompt, alert.serverId, contextData);
 
     // Parse response AI menjadi struktur terstruktur
     return parseResponseAI(responseAI);

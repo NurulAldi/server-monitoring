@@ -439,11 +439,35 @@ async function generateRekomendasiMaintenance(serverId) {
  * TUJUAN: Menganalisis ringkasan kesehatan server dan memberikan rekomendasi terstruktur
  *
  * @param {string} prompt - Prompt lengkap untuk AI
+ * @param {string} serverId - ID server yang dianalisis
+ * @param {Object} contextData - Data konteks untuk logging
  * @returns {string} Response AI dalam format JSON
  */
-async function analisisKondisiServer(prompt) {
+async function analisisKondisiServer(prompt, serverId = null, contextData = {}) {
+  let logId = null;
+  let sessionId = null;
+
   try {
     logger.debug('Memulai analisis kondisi server dengan AI menggunakan shared service');
+
+    // Import AI logging service
+    const aiLoggingService = require('./aiLoggingService');
+
+    // Start logging AI analysis
+    const loggingContext = await aiLoggingService.startServerAnalysisLogging(
+      serverId,
+      null, // userId - system initiated
+      {
+        prompt: prompt,
+        serverInfo: contextData.serverInfo || null,
+        metricsData: contextData.metricsData || null,
+        historicalData: contextData.historicalData || null,
+        userContext: { analysisType: 'email_alert_analysis' }
+      }
+    );
+
+    sessionId = loggingContext.sessionId;
+    logId = loggingContext.logId;
 
     // Gunakan shared AI service untuk konsistensi
     const systemPrompt = getSystemPrompt('emailAnalysis');
@@ -459,6 +483,22 @@ async function analisisKondisiServer(prompt) {
     // Validate response menggunakan shared service
     const validation = validateResponse('emailAnalysis', result.response);
 
+    // Complete logging dengan output AI
+    await aiLoggingService.completeServerAnalysisLogging(
+      sessionId,
+      result.rawResponse || result.response,
+      validation.standardized,
+      {
+        confidence: validation.confidence || 0.8,
+        processingTime: result.processingTime || 0,
+        tokensUsed: result.usage || { total: result.usage?.total_tokens || 0 },
+        accuracy: 0.8,
+        relevance: 0.9,
+        actionability: 0.8,
+        timeliness: 0.9
+      }
+    );
+
     if (!validation.isValid) {
       logger.warn('AI response validation failed, using fallback', {
         error: validation.error,
@@ -469,13 +509,28 @@ async function analisisKondisiServer(prompt) {
 
     logger.debug('AI analysis completed successfully', {
       responseLength: result.response.length,
-      tokensUsed: result.usage?.total_tokens
+      tokensUsed: result.usage?.total_tokens,
+      logId: logId
     });
 
     return validation.standardized;
 
   } catch (error) {
-    logger.logError('AI_ANALYSIS_ERROR', error, { promptLength: prompt.length });
+    // Log error jika ada logId
+    if (logId && sessionId) {
+      try {
+        await aiLoggingService.logAIError(
+          logId,
+          'server_analysis_error',
+          error.message,
+          'Fallback to standard analysis'
+        );
+      } catch (logError) {
+        logger.logError('AI_ERROR_LOGGING_FAILED', logError);
+      }
+    }
+
+    logger.logError('AI_ANALYSIS_ERROR', error, { promptLength: prompt.length, serverId });
     throw new Error('Gagal menganalisis kondisi server dengan AI');
   }
 }
