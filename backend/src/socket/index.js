@@ -165,6 +165,7 @@ function setupSocketHandlers(io) {
   setupAlertNamespace(io);
   setupSystemNamespace(io);
   setupAdminNamespace(io);
+  setupAINamespace(io); // Tambahkan namespace AI
 
   logger.info('Socket.IO handlers berhasil di-setup');
 }
@@ -1023,11 +1024,195 @@ function checkRateLimit(userId, eventType, limit = 10, windowMs = 60000) {
   return true;
 }
 
+  return true;
+}
+
+/**
+ * Setup namespace /ai untuk AI chat real-time
+ * @param {SocketIO.Server} io - Socket.IO server instance
+ */
+function setupAINamespace(io) {
+  const ai = io.of('/ai');
+
+  // Middleware autentikasi untuk namespace AI
+  ai.use(async (socket, next) => {
+    if (socket.userId) {
+      next();
+    } else {
+      next(new Error('Autentikasi diperlukan untuk AI chat'));
+    }
+  });
+
+  ai.on('connection', (socket) => {
+    logger.debug(`User ${socket.userId} connected to /ai namespace`);
+
+    // Join user-specific AI room untuk pesan personal
+    socket.join(`ai_user_${socket.userId}`);
+    logger.debug(`User ${socket.userId} joined AI room: ai_user_${socket.userId}`);
+
+    // Event: User memulai chat session
+    socket.on('ai:session:start', (data) => {
+      logger.logSystemActivity('AI_SESSION_START', {
+        userId: socket.userId,
+        socketId: socket.id,
+        sessionId: data.sessionId,
+        timestamp: new Date().toISOString()
+      });
+
+      // Emit konfirmasi session dimulai
+      socket.emit('ai:session:started', {
+        sessionId: data.sessionId,
+        status: 'ready',
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    // Event: User mengirim pertanyaan (status thinking)
+    socket.on('ai:question:sent', (data) => {
+      logger.logSystemActivity('AI_QUESTION_SENT', {
+        userId: socket.userId,
+        socketId: socket.id,
+        questionLength: data.question?.length || 0,
+        serverId: data.serverId,
+        timestamp: new Date().toISOString()
+      });
+
+      // Broadcast ke room user bahwa AI sedang thinking
+      ai.to(`ai_user_${socket.userId}`).emit('ai:status:thinking', {
+        questionId: data.questionId,
+        status: 'processing',
+        message: 'AI sedang menganalisis pertanyaan Anda...',
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    // Event: AI selesai memproses (dari kontroler)
+    socket.on('ai:response:ready', (data) => {
+      // Emit response ke user
+      ai.to(`ai_user_${socket.userId}`).emit('ai:response', {
+        questionId: data.questionId,
+        answer: data.answer,
+        dataUsed: data.dataUsed,
+        confidence: data.confidence,
+        timestamp: data.timestamp,
+        status: 'completed'
+      });
+
+      logger.logSystemActivity('AI_RESPONSE_SENT', {
+        userId: socket.userId,
+        socketId: socket.id,
+        questionId: data.questionId,
+        answerLength: data.answer?.length || 0,
+        dataUsed: data.dataUsed,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    // Event: Error dalam AI processing
+    socket.on('ai:error', (data) => {
+      ai.to(`ai_user_${socket.userId}`).emit('ai:status:error', {
+        questionId: data.questionId,
+        error: data.error,
+        message: data.message,
+        timestamp: new Date().toISOString()
+      });
+
+      logger.logSystemActivity('AI_ERROR', {
+        userId: socket.userId,
+        socketId: socket.id,
+        questionId: data.questionId,
+        error: data.error,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    // Event: User melihat data health terbaru
+    socket.on('ai:data:request', (serverId) => {
+      // Emit data health terbaru untuk konteks AI
+      emitLatestHealthData(socket, serverId);
+    });
+
+    socket.on('disconnect', () => {
+      logger.debug(`User ${socket.userId} disconnected from /ai namespace`);
+    });
+  });
+}
+
+/**
+ * Emit response AI ke user tertentu
+ * @param {string} userId - ID user target
+ * @param {Object} responseData - Data response AI
+ */
+function emitAIResponse(userId, responseData) {
+  // Emit ke namespace /ai room user
+  const aiNamespace = global.io?.of('/ai');
+  if (aiNamespace) {
+    aiNamespace.to(`ai_user_${userId}`).emit('ai:response', {
+      ...responseData,
+      timestamp: new Date().toISOString()
+    });
+
+    logger.debug(`AI response emitted to user ${userId}`);
+  } else {
+    logger.warn('AI namespace not available for emitAIResponse');
+  }
+}
+
+/**
+ * Emit status thinking AI ke user
+ * @param {string} userId - ID user target
+ * @param {string} questionId - ID pertanyaan
+ */
+function emitAIThinking(userId, questionId) {
+  const aiNamespace = global.io?.of('/ai');
+  if (aiNamespace) {
+    aiNamespace.to(`ai_user_${userId}`).emit('ai:status:thinking', {
+      questionId,
+      status: 'processing',
+      message: 'AI sedang menganalisis...',
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
+/**
+ * Emit data health server terbaru untuk konteks AI
+ * @param {SocketIO.Socket} socket - Socket instance
+ * @param {string} serverId - ID server
+ */
+async function emitLatestHealthData(socket, serverId) {
+  try {
+    const Metrik = require('../model/Metrik');
+
+    const query = serverId ? { serverId } : {};
+    const latestMetrics = await Metrik.find(query)
+      .sort({ timestamp: -1 })
+      .limit(1)
+      .populate('serverId', 'nama hostname');
+
+    if (latestMetrics.length > 0) {
+      socket.emit('ai:data:latest', {
+        serverId,
+        metrics: latestMetrics[0],
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    logger.error('Error emitting latest health data:', error);
+    socket.emit('ai:data:error', {
+      serverId,
+      error: 'Gagal mengambil data health terbaru',
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
 // Export functions untuk digunakan di service lain
 module.exports = {
   setupSocketHandlers,
   emitDashboardSummary,
   emitAIResponse,
+  emitAIThinking,
   trackConnection,
   removeConnectionTracking,
   checkRateLimit

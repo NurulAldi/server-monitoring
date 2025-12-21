@@ -149,6 +149,136 @@ SMTP_PASS=your_app_password
 - **Tujuan:** Konfirmasi server sudah sehat
 - **Template:** Durasi downtime + status terkini
 
+## AI Chatbot Assistant
+
+Sistem AI chatbot terintegrasi untuk membantu analisis kesehatan server dengan batasan ketat untuk keamanan.
+
+### Peran AI (Yang Diperbolehkan)
+
+✅ **Menjawab Pertanyaan User:**
+- Informasi tentang sistem monitoring
+- Penjelasan fitur dashboard
+- Bantuan navigasi aplikasi
+
+✅ **Menganalisis Data Health Server:**
+- Analisis metrik CPU, memory, disk, network
+- Identifikasi pola dan tren
+- Deteksi anomali data
+
+✅ **Menjelaskan Makna Perubahan Data:**
+- Interpretasi signifikansi perubahan metrik
+- Penjelasan dampak terhadap kesehatan server
+- Rekomendasi informatif (bukan instruksi eksekusi)
+
+### Batasan AI (Yang DILARANG)
+
+❌ **TIDAK BOLEH Mengambil Tindakan Langsung:**
+- Tidak bisa restart server
+- Tidak bisa mengubah konfigurasi
+- Tidak bisa menjalankan perintah sistem
+
+❌ **TIDAK BOLEH Mengubah Data:**
+- Tidak bisa edit data metrik
+- Tidak bisa hapus atau tambah data
+- Tidak bisa memanipulasi database
+
+❌ **TIDAK BOLEH Membuat Keputusan Sistem:**
+- Tidak bisa mengambil keputusan otomatis
+- Tidak bisa memberikan instruksi eksekusi
+- Tidak bisa menggantikan kontrol manusia
+
+### Konfigurasi AI
+
+Setup API key di file `.env`:
+
+```env
+# OpenAI (recommended)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Atau Gemini (alternative)
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+### API Endpoints AI
+
+#### POST /ai/chat
+Endpoint utama untuk interaksi chatbot.
+
+**Request Body:**
+```json
+{
+  "pertanyaan": "string - Pertanyaan user",
+  "serverId": "string - Opsional, ID server untuk analisis spesifik"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "jawaban": "string - Jawaban AI",
+  "timestamp": "2025-12-21T10:30:00.000Z",
+  "catatan": "string - Disclaimer batasan AI"
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "message": "Pertanyaan mengandung instruksi yang tidak diperbolehkan"
+}
+```
+
+#### GET /ai/info
+Endpoint informasi peran dan batasan AI.
+
+**Response:**
+```json
+{
+  "success": true,
+  "peran": ["array of allowed roles"],
+  "batasan": ["array of restrictions"],
+  "catatan": "AI hanya memberikan analisis informatif"
+}
+```
+
+### Mekanisme Keamanan AI
+
+1. **Validasi Input:** Semua pertanyaan dicek terhadap kata kunci terlarang
+2. **System Prompt:** AI diberi instruksi ketat tentang batasan
+3. **Rate Limiting:** Pembatasan frekuensi pertanyaan per user
+4. **Audit Logging:** Semua interaksi AI dicatat untuk monitoring
+5. **Fallback Response:** Jika AI gagal, berikan pesan error informatif
+
+### Contoh Penggunaan
+
+**Pertanyaan Aman:**
+- "Apa arti CPU usage 80%?"
+- "Jelaskan tren memory server X"
+- "Bagaimana cara melihat alert aktif?"
+
+**Pertanyaan Ditolak:**
+- "Restart server production"
+- "Hapus data metrik lama"
+- "Jalankan perintah shutdown"
+
+### Teknologi AI
+
+- **Primary:** OpenAI GPT-3.5-turbo
+- **Fallback:** Google Gemini (jika OpenAI unavailable)
+- **Local Alternative:** Mock AI untuk development
+- **Temperature:** 0.3 (konsisten, tidak kreatif berlebihan)
+- **Max Tokens:** 500 per response
+
+### Monitoring AI
+
+- Response time tracking
+- Error rate monitoring
+- User interaction analytics
+- Content safety validation
+- API usage monitoring
+
 #### 4. Ringkasan Harian
 - **Kapan:** Setiap hari pukul 08:00 WIB
 - **Tujuan:** Laporan periodik kondisi semua server

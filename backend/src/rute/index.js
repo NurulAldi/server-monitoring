@@ -6,6 +6,9 @@ const router = express.Router();
 const { HTTP_STATUS } = require('../utilitas/konstanta');
 const { logger } = require('../utilitas/logger');
 
+// Import kontroler chatbot AI
+const kontrolerChatbotAI = require('../kontroler/kontrolerChatbotAI');
+
 /**
  * DESKRIPSI: Endpoint health check untuk validasi server backend
  *
@@ -152,6 +155,117 @@ router.get('/', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+/**
+ * DESKRIPSI: Endpoint untuk chatbot AI dengan batasan ketat
+ *
+ * TUJUAN: Menyediakan interface untuk interaksi dengan AI yang hanya dapat:
+ * - Menjawab pertanyaan informatif
+ * - Menganalisis data kesehatan server
+ * - Menjelaskan makna perubahan data
+ *
+ * AI TIDAK BOLEH mengambil tindakan langsung, mengubah data, atau membuat keputusan sistem.
+ *
+ * ALUR KERJA:
+ * 1. Validasi autentikasi pengguna
+ * 2. Validasi batasan pertanyaan (cegah instruksi berbahaya)
+ * 3. Ambil data metrik jika diperlukan untuk analisis
+ * 4. Generate jawaban AI dengan batasan
+ * 5. Return response dengan disclaimer
+ *
+ * REQUEST BODY:
+ * {
+ *   "pertanyaan": "string - Pertanyaan pengguna",
+ *   "serverId": "string - Opsional, ID server untuk analisis spesifik"
+ * }
+ *
+ * RESPONSE FORMAT:
+ * {
+ *   "success": true,
+ *   "jawaban": "string - Jawaban AI",
+ *   "timestamp": "2025-12-21T10:30:00.000Z",
+ *   "catatan": "string - Disclaimer tentang batasan AI"
+ * }
+ *
+ * @route POST /ai/chat
+ * @middleware autentikasi (required)
+ * @param {string} pertanyaan - Pertanyaan pengguna
+ * @param {string} serverId - ID server (opsional)
+ * @returns {Object} Jawaban AI dengan batasan
+ */
+router.post('/ai/chat', kontrolerChatbotAI.tanyaChatbot);
+
+/**
+ * DESKRIPSI: Endpoint informasi batasan AI
+ *
+ * TUJUAN: Memberikan informasi jelas tentang peran dan batasan chatbot AI
+ * untuk transparansi kepada pengguna.
+ *
+ * @route GET /ai/info
+ * @returns {Object} Informasi peran dan batasan AI
+ */
+router.get('/ai/info', kontrolerChatbotAI.dapatkanInfoBatasan);
+
+/**
+ * DESKRIPSI: Endpoint riwayat chat AI user
+ *
+ * TUJUAN: Mengambil riwayat percakapan AI user untuk audit dan review.
+ * Mendukung pagination dan filtering berdasarkan status dan tanggal.
+ *
+ * QUERY PARAMETERS:
+ * - page: number - Halaman (default: 1)
+ * - limit: number - Jumlah item per halaman (default: 20)
+ * - status: string - Filter berdasarkan status (active, completed, error)
+ * - startDate: string - Filter mulai tanggal (ISO format)
+ * - endDate: string - Filter akhir tanggal (ISO format)
+ *
+ * @route GET /ai/history
+ * @middleware autentikasi (required)
+ * @returns {Object} Riwayat chat dengan pagination
+ */
+router.get('/ai/history', kontrolerChatbotAI.dapatkanRiwayatChat);
+
+/**
+ * DESKRIPSI: Endpoint statistik chat AI user
+ *
+ * TUJUAN: Memberikan statistik penggunaan AI chat untuk analisis performa
+ * dan evaluasi sistem.
+ *
+ * QUERY PARAMETERS:
+ * - startDate: string - Filter mulai tanggal (ISO format)
+ * - endDate: string - Filter akhir tanggal (ISO format)
+ *
+ * @route GET /ai/stats
+ * @middleware autentikasi (required)
+ * @returns {Object} Statistik penggunaan AI chat
+ */
+router.get('/ai/stats', kontrolerChatbotAI.dapatkanStatistikChat);
+
+/**
+ * DESKRIPSI: Endpoint detail sesi chat tertentu
+ *
+ * TUJUAN: Mengambil detail lengkap sesi chat tertentu termasuk semua pesan
+ * dan metadata untuk audit atau review.
+ *
+ * @route GET /ai/session/:sessionId
+ * @middleware autentikasi (required)
+ * @param {string} sessionId - ID sesi chat
+ * @returns {Object} Detail lengkap sesi chat
+ */
+router.get('/ai/session/:sessionId', kontrolerChatbotAI.dapatkanDetailSesi);
+
+/**
+ * DESKRIPSI: Endpoint hapus sesi chat
+ *
+ * TUJUAN: Menghapus sesi chat (soft delete) untuk privacy dan cleanup.
+ * Sesi akan diubah status menjadi 'cancelled'.
+ *
+ * @route DELETE /ai/session/:sessionId
+ * @middleware autentikasi (required)
+ * @param {string} sessionId - ID sesi chat
+ * @returns {Object} Status penghapusan
+ */
+router.delete('/ai/session/:sessionId', kontrolerChatbotAI.hapusSesiChat);
 
 // Export router
 module.exports = router;

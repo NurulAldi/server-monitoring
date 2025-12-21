@@ -14,6 +14,7 @@ import {
   ChartUptime,
   ChartConnections
 } from '@/komponen/bagan'
+import ChatbotAI from '@/komponen/umum/ChatbotAI'
 
 export const metadata: Metadata = {
   title: 'Dashboard - Monitoring Server',
@@ -142,6 +143,23 @@ export default function HalamanDashboard() {
                 <div className="card-body">
                   <ChartConnections height={300} />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Assistant Chatbot */}
+          <div className="mt-8">
+            <div className="card">
+              <div className="card-header">
+                <h2 className="text-heading text-text-primary">
+                  AI Assistant
+                </h2>
+                <p className="text-body-small text-text-secondary">
+                  Tanyakan tentang kesehatan server atau analisis data
+                </p>
+              </div>
+              <div className="card-body">
+                <ChatbotAI className="h-96" />
               </div>
             </div>
           </div>
