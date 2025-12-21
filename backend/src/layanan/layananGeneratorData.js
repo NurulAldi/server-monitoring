@@ -272,6 +272,16 @@ class GeneratorDataMetrik {
       const metrikBaru = new Metrik(dataMetrik);
       await metrikBaru.save();
 
+      // TRIGGER ALERT EVALUATION - Evaluasi kondisi alert setelah metrics tersimpan
+      try {
+        const layananAlert = require('./layananAlert');
+        await layananAlert.evaluasiKondisiAlert(serverId, dataMetrik);
+        logger.debug(`Alert evaluation triggered untuk server ${serverId} setelah data generation`);
+      } catch (alertError) {
+        logger.error(`Failed to trigger alert evaluation untuk server ${serverId}:`, alertError);
+        // Don't fail the entire operation if alert evaluation fails
+      }
+
       // TRIGGER STATUS EVALUATION - Langkah 3: Evaluasi status server setelah data tersimpan
       try {
         const statusService = getLayananStatusServer();

@@ -1,31 +1,276 @@
-// Kontroler untuk mengelola operasi alert dan notifikasi
+// Kontroler untuk mengelola operasi alert dan kondisi alert
 // Handle request/response untuk endpoint manajemen alert monitoring
 
-const { HTTP_STATUS, ERROR_CODE, ALERT_BARU, ALERT_DIACKNOWLEDGE, ALERT_DISOLVED } = require('../utilitas/konstanta');
+const { HTTP_STATUS, ERROR_CODE } = require('../utilitas/konstanta');
 const { logger } = require('../utilitas/logger');
 const layananAlert = require('../layanan/layananAlert');
 const { body, param, query, validationResult } = require('express-validator');
+const Alert = require('../model/Alert');
+const AlertCondition = require('../model/AlertCondition');
+const Server = require('../model/Server');
+
+/**
+ * DESKRIPSI: Handle request untuk mendapatkan daftar kondisi alert
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function dapatkanKondisiAlert(req, res) {
+  try {
+    const userId = req.user.id;
+    const { serverId, parameter, aktif = true } = req.query;
+
+    // Log aktivitas
+    logger.logUserActivity(userId, 'ALERT_CONDITION_REQUEST', {
+      serverId,
+      parameter,
+      aktif,
+      ip: req.ip
+    });
+
+    // Query kondisi alert
+    let query = {};
+    if (serverId) query.serverId = serverId;
+    if (parameter) query.parameter = parameter;
+    if (aktif !== undefined) query.aktif = aktif === 'true';
+
+    const kondisiAlert = await AlertCondition.find(query)
+      .populate('serverId', 'nama jenisServer')
+      .populate('metadata.dibuatOleh', 'nama email')
+      .sort({ serverId: -1, parameter: 1, createdAt: -1 });
+
+    // Format response
+    const response = kondisiAlert.map(k => k.formatUntukDisplay());
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: response,
+      meta: {
+        total: response.length,
+        serverId,
+        parameter,
+        aktif
+      }
+    });
+
+  } catch (error) {
+    logger.logError('ALERT_CONDITION_FETCH_FAILED', error, { userId: req.user.id });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: {
+        code: ERROR_CODE.INTERNAL_ERROR,
+        message: 'Gagal mengambil data kondisi alert'
+      }
+    });
+  }
+}
+
+/**
+ * DESKRIPSI: Handle request untuk membuat kondisi alert baru
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function buatKondisiAlert(req, res) {
+  try {
+    const userId = req.user.id;
+    const kondisiData = req.body;
+
+    // Validasi input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.VALIDATION_ERROR,
+          message: 'Data tidak valid',
+          details: errors.array()
+        }
+      });
+    }
+
+    // Set metadata
+    kondisiData.metadata = {
+      dibuatOleh: userId,
+      ...kondisiData.metadata
+    };
+
+    // Buat kondisi alert baru
+    const kondisiAlert = new AlertCondition(kondisiData);
+    await kondisiAlert.save();
+
+    // Log aktivitas
+    logger.logUserActivity(userId, 'ALERT_CONDITION_CREATED', {
+      conditionId: kondisiAlert._id,
+      parameter: kondisiAlert.parameter,
+      serverId: kondisiAlert.serverId,
+      ip: req.ip
+    });
+
+    res.status(HTTP_STATUS.CREATED).json({
+      success: true,
+      data: kondisiAlert.formatUntukDisplay(),
+      message: 'Kondisi alert berhasil dibuat'
+    });
+
+  } catch (error) {
+    logger.logError('ALERT_CONDITION_CREATE_FAILED', error, {
+      userId: req.user.id,
+      data: req.body
+    });
+
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: {
+        code: ERROR_CODE.INTERNAL_ERROR,
+        message: 'Gagal membuat kondisi alert'
+      }
+    });
+  }
+}
+
+/**
+ * DESKRIPSI: Handle request untuk update kondisi alert
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function updateKondisiAlert(req, res) {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Validasi input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.VALIDATION_ERROR,
+          message: 'Data tidak valid',
+          details: errors.array()
+        }
+      });
+    }
+
+    // Update kondisi alert
+    updateData.metadata = {
+      diupdateOleh: userId,
+      ...updateData.metadata
+    };
+
+    const kondisiAlert = await AlertCondition.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('serverId', 'nama jenisServer');
+
+    if (!kondisiAlert) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.NOT_FOUND,
+          message: 'Kondisi alert tidak ditemukan'
+        }
+      });
+    }
+
+    // Log aktivitas
+    logger.logUserActivity(userId, 'ALERT_CONDITION_UPDATED', {
+      conditionId: kondisiAlert._id,
+      parameter: kondisiAlert.parameter,
+      ip: req.ip
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: kondisiAlert.formatUntukDisplay(),
+      message: 'Kondisi alert berhasil diupdate'
+    });
+
+  } catch (error) {
+    logger.logError('ALERT_CONDITION_UPDATE_FAILED', error, {
+      userId: req.user.id,
+      conditionId: req.params.id
+    });
+
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: {
+        code: ERROR_CODE.INTERNAL_ERROR,
+        message: 'Gagal update kondisi alert'
+      }
+    });
+  }
+}
+
+/**
+ * DESKRIPSI: Handle request untuk menghapus kondisi alert
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function hapusKondisiAlert(req, res) {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    // Soft delete dengan set aktif = false
+    const kondisiAlert = await AlertCondition.findByIdAndUpdate(
+      id,
+      {
+        aktif: false,
+        metadata: {
+          diupdateOleh: userId
+        }
+      },
+      { new: true }
+    );
+
+    if (!kondisiAlert) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.NOT_FOUND,
+          message: 'Kondisi alert tidak ditemukan'
+        }
+      });
+    }
+
+    // Log aktivitas
+    logger.logUserActivity(userId, 'ALERT_CONDITION_DELETED', {
+      conditionId: kondisiAlert._id,
+      parameter: kondisiAlert.parameter,
+      ip: req.ip
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Kondisi alert berhasil dinonaktifkan'
+    });
+
+  } catch (error) {
+    logger.logError('ALERT_CONDITION_DELETE_FAILED', error, {
+      userId: req.user.id,
+      conditionId: req.params.id
+    });
+
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: {
+        code: ERROR_CODE.INTERNAL_ERROR,
+        message: 'Gagal menghapus kondisi alert'
+      }
+    });
+  }
+}
 
 /**
  * DESKRIPSI: Handle request untuk mendapatkan daftar alert aktif
  *
- * TUJUAN: Menampilkan alert yang belum di-resolve untuk monitoring
- * dan manajemen masalah server secara real-time.
- *
- * ALUR:
- * 1. Validasi parameter filter (opsional)
- * 2. Ambil data alert aktif dari layanan
- * 3. Format response dengan informasi lengkap alert
- * 4. Log aktivitas untuk audit trail
- *
  * @param {Object} req - Express request object
- * @param {Object} req.query - Query parameters
- * @param {string} req.query.severity - Filter berdasarkan severity (optional)
- * @param {string} req.query.serverId - Filter berdasarkan server ID (optional)
- * @param {number} req.query.halaman - Nomor halaman (default: 1)
- * @param {number} req.query.limit - Jumlah data per halaman (default: 20)
  * @param {Object} res - Express response object
- * @returns {Promise<void>} Response JSON dengan daftar alert aktif
  */
 async function dapatkanAlertAktif(req, res) {
   try {
@@ -38,16 +283,338 @@ async function dapatkanAlertAktif(req, res) {
 
     // Log aktivitas
     logger.logUserActivity(userId, 'ALERT_REQUEST_ACTIVE', {
-      severity: severity,
-      serverId: serverId,
+      severity,
+      serverId,
       page: halamanInt,
       limit: limitInt,
       ip: req.ip
     });
 
-    // Panggil layanan untuk dapatkan alert aktif
-    const hasilAlert = await layananAlert.dapatkanAlertAktif(
-      userId,
+    // Query alert aktif
+    let query = { statusAlert: { $ne: 'resolved' } };
+    if (severity) query.severity = severity;
+    if (serverId) query.serverId = serverId;
+
+    const alerts = await Alert.find(query)
+      .populate('serverId', 'nama jenisServer host')
+      .populate('assignedKe', 'nama email')
+      .sort({ severity: -1, timestampPemicu: -1 })
+      .skip((halamanInt - 1) * limitInt)
+      .limit(limitInt);
+
+    const total = await Alert.countDocuments(query);
+
+    // Format response
+    const response = alerts.map(alert => alert.formatUntukDisplay());
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: response,
+      meta: {
+        total,
+        halaman: halamanInt,
+        limit: limitInt,
+        totalHalaman: Math.ceil(total / limitInt)
+      }
+    });
+
+  } catch (error) {
+    logger.logError('ALERT_ACTIVE_FETCH_FAILED', error, { userId: req.user.id });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: {
+        code: ERROR_CODE.INTERNAL_ERROR,
+        message: 'Gagal mengambil data alert aktif'
+      }
+    });
+  }
+}
+
+/**
+ * DESKRIPSI: Handle request untuk acknowledge alert
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function acknowledgeAlert(req, res) {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { catatan } = req.body;
+
+    const alert = await Alert.findById(id);
+    if (!alert) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.NOT_FOUND,
+          message: 'Alert tidak ditemukan'
+        }
+      });
+    }
+
+    await alert.acknowledge(userId, catatan);
+
+    // Log aktivitas
+    logger.logUserActivity(userId, 'ALERT_ACKNOWLEDGED', {
+      alertId: alert._id,
+      serverId: alert.serverId,
+      ip: req.ip
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: alert.formatUntukDisplay(),
+      message: 'Alert berhasil di-acknowledge'
+    });
+
+  } catch (error) {
+    logger.logError('ALERT_ACKNOWLEDGE_FAILED', error, {
+      userId: req.user.id,
+      alertId: req.params.id
+    });
+
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: {
+        code: ERROR_CODE.INTERNAL_ERROR,
+        message: 'Gagal acknowledge alert'
+      }
+    });
+  }
+}
+
+/**
+ * DESKRIPSI: Handle request untuk resolve alert
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function resolveAlert(req, res) {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { catatan } = req.body;
+
+    const alert = await Alert.findById(id);
+    if (!alert) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.NOT_FOUND,
+          message: 'Alert tidak ditemukan'
+        }
+      });
+    }
+
+    await alert.resolve(userId, catatan);
+
+    // Log aktivitas
+    logger.logUserActivity(userId, 'ALERT_RESOLVED', {
+      alertId: alert._id,
+      serverId: alert.serverId,
+      ip: req.ip
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: alert.formatUntukDisplay(),
+      message: 'Alert berhasil di-resolve'
+    });
+
+  } catch (error) {
+    logger.logError('ALERT_RESOLVE_FAILED', error, {
+      userId: req.user.id,
+      alertId: req.params.id
+    });
+
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: {
+        code: ERROR_CODE.INTERNAL_ERROR,
+        message: 'Gagal resolve alert'
+      }
+    });
+  }
+}
+
+/**
+ * DESKRIPSI: Handle request untuk evaluasi alert manual
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function evaluasiAlertManual(req, res) {
+  try {
+    const userId = req.user.id;
+    const { serverId } = req.body;
+
+    if (!serverId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.VALIDATION_ERROR,
+          message: 'Server ID wajib diisi'
+        }
+      });
+    }
+
+    // Verifikasi server exists
+    const server = await Server.findById(serverId);
+    if (!server) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.NOT_FOUND,
+          message: 'Server tidak ditemukan'
+        }
+      });
+    }
+
+    // Dapatkan metrics terbaru
+    const Metrik = require('../model/Metrik');
+    const metricsTerbaru = await Metrik.findOne({ serverId })
+      .sort({ timestamp: -1 });
+
+    if (!metricsTerbaru) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.NOT_FOUND,
+          message: 'Metrics server tidak ditemukan'
+        }
+      });
+    }
+
+    // Evaluasi alert
+    const alertsDibuat = await layananAlert.evaluasiKondisiAlert(serverId, metricsTerbaru.toObject());
+
+    // Log aktivitas
+    logger.logUserActivity(userId, 'ALERT_MANUAL_EVALUATION', {
+      serverId,
+      alertsCreated: alertsDibuat.length,
+      ip: req.ip
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: {
+        serverId,
+        namaServer: server.nama,
+        alertsDibuat: alertsDibuat.length,
+        alerts: alertsDibuat.map(a => ({
+          id: a._id,
+          judul: a.judul,
+          severity: a.severity,
+          parameter: a.kondisiPemicu.metric
+        }))
+      },
+      message: `Evaluasi alert selesai, ${alertsDibuat.length} alert dibuat`
+    });
+
+  } catch (error) {
+    logger.logError('ALERT_MANUAL_EVALUATION_FAILED', error, {
+      userId: req.user.id,
+      serverId: req.body.serverId
+    });
+
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: {
+        code: ERROR_CODE.INTERNAL_ERROR,
+        message: 'Gagal evaluasi alert manual'
+      }
+    });
+  }
+}
+
+/**
+ * DESKRIPSI: Handle request untuk mendapatkan statistik alert
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function dapatkanStatistikAlert(req, res) {
+  try {
+    const userId = req.user.id;
+    const { hariTerakhir = 30 } = req.query;
+
+    const statistik = await Alert.dapatkanStatistikAlert(parseInt(hariTerakhir));
+
+    // Log aktivitas
+    logger.logUserActivity(userId, 'ALERT_STATISTICS_REQUEST', {
+      days: hariTerakhir,
+      ip: req.ip
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: statistik[0] || {},
+      meta: {
+        hariTerakhir: parseInt(hariTerakhir)
+      }
+    });
+
+  } catch (error) {
+    logger.logError('ALERT_STATISTICS_FAILED', error, { userId: req.user.id });
+
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: {
+        code: ERROR_CODE.INTERNAL_ERROR,
+        message: 'Gagal mengambil statistik alert'
+      }
+    });
+  }
+}
+
+// Validation rules
+const validasiBuatKondisiAlert = [
+  body('parameter').isIn([
+    'cpu_usage', 'memory_usage', 'disk_usage', 'network_io',
+    'system_load', 'temperature', 'server_uptime', 'response_time', 'error_rate'
+  ]).withMessage('Parameter tidak valid'),
+  body('nama').isLength({ min: 1, max: 100 }).withMessage('Nama harus 1-100 karakter'),
+  body('thresholds.warning.nilai').isNumeric().withMessage('Threshold warning harus angka'),
+  body('thresholds.critical.nilai').isNumeric().withMessage('Threshold critical harus angka'),
+  body('thresholds.recovery.nilai').isNumeric().withMessage('Threshold recovery harus angka')
+];
+
+const validasiUpdateKondisiAlert = [
+  param('id').isMongoId().withMessage('ID kondisi tidak valid'),
+  ...validasiBuatKondisiAlert
+];
+
+const validasiHapusKondisiAlert = [
+  param('id').isMongoId().withMessage('ID kondisi tidak valid')
+];
+
+const validasiAcknowledgeAlert = [
+  param('id').isMongoId().withMessage('ID alert tidak valid'),
+  body('catatan').optional().isLength({ max: 500 }).withMessage('Catatan maksimal 500 karakter')
+];
+
+const validasiResolveAlert = [
+  param('id').isMongoId().withMessage('ID alert tidak valid'),
+  body('catatan').optional().isLength({ max: 1000 }).withMessage('Catatan maksimal 1000 karakter')
+];
+
+module.exports = {
+  dapatkanKondisiAlert,
+  buatKondisiAlert,
+  updateKondisiAlert,
+  hapusKondisiAlert,
+  dapatkanAlertAktif,
+  acknowledgeAlert,
+  resolveAlert,
+  evaluasiAlertManual,
+  dapatkanStatistikAlert,
+  validasiBuatKondisiAlert,
+  validasiUpdateKondisiAlert,
+  validasiHapusKondisiAlert,
+  validasiAcknowledgeAlert,
+  validasiResolveAlert
+};
       { severity, serverId },
       halamanInt,
       limitInt

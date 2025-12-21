@@ -9,6 +9,9 @@ const { logger } = require('../utilitas/logger');
 // Import kontroler chatbot AI
 const kontrolerChatbotAI = require('../kontroler/kontrolerChatbotAI');
 
+// Import rute alert
+const ruteAlert = require('./ruteAlert');
+
 /**
  * DESKRIPSI: Endpoint health check untuk validasi server backend
  *
@@ -266,6 +269,15 @@ router.get('/ai/session/:sessionId', kontrolerChatbotAI.dapatkanDetailSesi);
  * @returns {Object} Status penghapusan
  */
 router.delete('/ai/session/:sessionId', kontrolerChatbotAI.hapusSesiChat);
+
+// ============================================================================
+// RUTE ALERT - Manajemen Alert dan Kondisi Alert
+// ============================================================================
+
+/**
+ * Mount rute alert di /api/alert
+ */
+router.use('/alert', ruteAlert);
 
 // Export router
 module.exports = router;

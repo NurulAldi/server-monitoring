@@ -178,6 +178,18 @@ async function startServer() {
     await connectDatabase();
     logger.logSystemActivity('DATABASE_CONNECTED', { status: 'success' });
 
+    // Setup kondisi alert default
+    try {
+      const kondisiDefault = await layananAlert.buatKondisiAlertDefault();
+      logger.logSystemActivity('DEFAULT_ALERT_CONDITIONS_SETUP', {
+        conditionsCreated: kondisiDefault.length,
+        status: 'success'
+      });
+    } catch (error) {
+      logger.logSystemError('DEFAULT_ALERT_CONDITIONS_SETUP_FAILED', error);
+      // Don't fail server startup for this
+    }
+
     // Start scheduler untuk generate data otomatis
     inisialisasiPenjadwal();
     logger.logSystemActivity('SCHEDULER_STARTED', { status: 'success' });

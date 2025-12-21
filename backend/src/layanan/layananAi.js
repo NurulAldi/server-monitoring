@@ -4,6 +4,19 @@
 const { logger } = require('../utilitas/logger');
 const Metrik = require('../model/Metrik');
 const Server = require('../model/Server');
+const { OpenAI } = require('openai');
+
+// Import shared AI service untuk konsistensi
+const {
+  getSystemPrompt,
+  executeAICompletion,
+  validateResponse
+} = require('./sharedAIService');
+
+// Inisialisasi OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 /**
  * DESKRIPSI: Generate rekomendasi AI berdasarkan kondisi server
@@ -420,11 +433,59 @@ async function generateRekomendasiMaintenance(serverId) {
   }
 }
 
+/**
+ * DESKRIPSI: Analisis kondisi server menggunakan AI untuk alert email
+ *
+ * TUJUAN: Menganalisis ringkasan kesehatan server dan memberikan rekomendasi terstruktur
+ *
+ * @param {string} prompt - Prompt lengkap untuk AI
+ * @returns {string} Response AI dalam format JSON
+ */
+async function analisisKondisiServer(prompt) {
+  try {
+    logger.debug('Memulai analisis kondisi server dengan AI menggunakan shared service');
+
+    // Gunakan shared AI service untuk konsistensi
+    const systemPrompt = getSystemPrompt('emailAnalysis');
+
+    const result = await executeAICompletion([
+      { role: "system", content: systemPrompt },
+      { role: "user", content: prompt }
+    ], {
+      max_tokens: 1000,
+      temperature: 0.3
+    });
+
+    // Validate response menggunakan shared service
+    const validation = validateResponse('emailAnalysis', result.response);
+
+    if (!validation.isValid) {
+      logger.warn('AI response validation failed, using fallback', {
+        error: validation.error,
+        responseLength: result.response.length
+      });
+      return validation.standardized; // This will be the fallback response
+    }
+
+    logger.debug('AI analysis completed successfully', {
+      responseLength: result.response.length,
+      tokensUsed: result.usage?.total_tokens
+    });
+
+    return validation.standardized;
+
+  } catch (error) {
+    logger.logError('AI_ANALYSIS_ERROR', error, { promptLength: prompt.length });
+    throw new Error('Gagal menganalisis kondisi server dengan AI');
+  }
+}
+
 // Export semua fungsi
 module.exports = {
   generateRekomendasi,
   analisisTrenPerforma,
   generateRekomendasiPrediktif,
   generateRekomendasiMaintenance,
-  hitungTrenLinear
+  hitungTrenLinear,
+  analisisKondisiServer
 };

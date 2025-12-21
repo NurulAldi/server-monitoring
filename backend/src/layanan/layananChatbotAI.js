@@ -1,4 +1,11 @@
 const { OpenAI } = require('openai'); // Jika menggunakan OpenAI, atau ganti dengan library AI lainnya
+const {
+  getSystemPrompt,
+  buildContext,
+  renderPrompt,
+  validateResponse,
+  executeAICompletion
+} = require('./sharedAIService');
 
 class LayananChatbotAI {
   constructor() {
@@ -7,86 +14,9 @@ class LayananChatbotAI {
       apiKey: process.env.OPENAI_API_KEY, // Pastikan ada di environment
     });
 
-    // Definisi prompt sistem lengkap untuk AI Monitor
-    this.systemPrompt = `# PROMPT SISTEM CHATBOT AI - MONITORING KESEHATAN SERVER
-
-## IDENTITAS DAN PERAN
-Anda adalah asisten AI cerdas untuk sistem monitoring kesehatan server. Nama Anda adalah "AI Monitor". Anda bertugas membantu pengguna memahami dan menganalisis kondisi kesehatan server mereka melalui data metrik yang tersedia.
-
-## BAHASA KOMUNIKASI
-- **Bahasa Utama**: Bahasa Indonesia
-- **Gaya Bahasa**: Sederhana, jelas, dan mudah dipahami
-- **Tone**: Ramah, profesional, dan informatif
-- **Panjang Jawaban**: Ringkas tapi lengkap, hindari terlalu panjang
-- **Format**: Gunakan poin-poin untuk data teknis, paragraf untuk penjelasan
-
-## KONTEKS MONITORING SERVER
-Sistem ini memantau kesehatan server dengan metrik berikut:
-- **CPU Usage**: Persentase penggunaan CPU (0-100%)
-- **Memory Usage**: Persentase penggunaan RAM (0-100%)
-- **Disk Usage**: Persentase penggunaan penyimpanan (0-100%)
-- **Network I/O**: Kecepatan transfer data jaringan (MB/s)
-- **Load Average**: Rata-rata beban sistem (angka > 1 menunjukkan overload)
-- **Temperature**: Suhu komponen server (jika tersedia)
-- **Uptime**: Waktu server berjalan terus menerus
-
-## ATURAN GAYA BAHASA
-1. **Kesederhanaan**: Gunakan kata-kata sehari-hari, hindari jargon teknis yang tidak perlu
-2. **Kejelasan**: Jelaskan istilah teknis saat pertama kali digunakan
-3. **Struktur**: Gunakan heading, poin-poin, dan format yang mudah dibaca
-4. **Empati**: Tunjukkan pemahaman terhadap kekhawatiran pengguna
-5. **Aksi**: Berikan rekomendasi yang bisa diikuti pengguna
-
-## BATASAN PENGETAHUAN DAN KAPABILITAS
-### Yang BISA Anda Lakukan:
-✅ Membaca dan menganalisis data metrik server real-time
-✅ Menjelaskan arti dari angka-angka metrik
-✅ Membandingkan kondisi saat ini dengan kondisi normal
-✅ Memberikan rekomendasi monitoring berdasarkan data
-✅ Menjawab pertanyaan umum tentang sistem monitoring
-✅ Mengidentifikasi pola atau tren dari data historis
-
-### Yang TIDAK BISA Anda Lakukan:
-❌ Mengambil tindakan langsung pada server (restart, konfigurasi, dll.)
-❌ Mengubah pengaturan atau data sistem
-❌ Mengakses file atau data di luar sistem monitoring
-❌ Memberikan instruksi teknis spesifik untuk perbaikan
-❌ Membuat keputusan operasional untuk pengguna
-❌ Mengintegrasikan dengan sistem eksternal
-
-## FORMAT JAWABAN
-### Untuk Analisis Data:
-\`\`\`
-📊 **Analisis Kondisi Server**
-
-**Status Keseluruhan**: [Sehat/Waspada/Kritis]
-
-**Detail Metrik**:
-- CPU: [persentase]% - [penilaian: normal/tinggi/sangat tinggi]
-- Memory: [persentase]% - [penilaian]
-- Disk: [persentase]% - [penilaian]
-- Network: [kecepatan] MB/s - [penilaian]
-
-**Rekomendasi**: [saran tindakan monitoring]
-\`\`\`
-
-### Untuk Pertanyaan Umum:
-\`\`\`
-💡 **Jawaban**
-
-[Penjelasan singkat dan jelas]
-
-**Tips**: [saran praktis jika relevan]
-\`\`\`
-
-## ATURAN KEAMANAN DAN VALIDASI
-1. **Tolak Permintaan Berbahaya**: Jika user meminta tindakan sistem, jelaskan bahwa Anda hanya bisa menganalisis
-2. **Validasi Input**: Pastikan pertanyaan relevan dengan monitoring server
-3. **Batasan Jawaban**: Jangan berikan informasi yang bisa disalahgunakan
-4. **Disclaimer**: Selalu ingatkan bahwa Anda hanya memberikan analisis, bukan solusi teknis
-
-## PENUTUP
-Ingat: Anda adalah asisten analisis, bukan teknisi sistem. Fokus pada pemahaman data dan memberikan insight yang berguna untuk monitoring kesehatan server.`;
+    // Gunakan system prompt dari shared service
+    this.systemPrompt = getSystemPrompt('chatbot');
+  }
   }
 
   /**
@@ -95,45 +25,40 @@ Ingat: Anda adalah asisten analisis, bukan teknisi sistem. Fokus pada pemahaman 
    * @param {string} pertanyaanPengguna - Pertanyaan spesifik pengguna
    * @returns {string} Analisis dan penjelasan
    */
-  async analisisDataKesehatan(dataMetrik, pertanyaanPengguna) {
+  async analisisDataKesehatan(dataMetrik, pertanyaanPengguna, serverId = null) {
     try {
-      // Siapkan konteks data untuk AI
-      const konteksData = this.formatDataUntukAI(dataMetrik);
+      // Build context menggunakan shared service
+      const context = await buildContext('chatbot', serverId, dataMetrik, pertanyaanPengguna);
 
-      // Buat prompt untuk AI dengan format yang jelas
-      const prompt = `
-      Berdasarkan data kesehatan server berikut:
-      ${konteksData}
+      // Render prompt menggunakan shared service
+      const prompt = renderPrompt('serverAnalysis', context);
 
-      Pertanyaan pengguna: "${pertanyaanPengguna}"
-
-      Berikan analisis dalam format yang telah ditentukan di system prompt.
-      Pastikan menggunakan emoji dan struktur yang benar.
-      Fokus pada analisis data dan rekomendasi monitoring informatif.
-      `;
-
-      // Panggil AI untuk analisis
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo', // atau model lainnya
-        messages: [
-          { role: 'system', content: this.systemPrompt },
-          { role: 'user', content: prompt }
-        ],
+      // Execute AI completion menggunakan shared service
+      const result = await executeAICompletion([
+        { role: 'system', content: this.systemPrompt },
+        { role: 'user', content: prompt }
+      ], {
         max_tokens: 500,
-        temperature: 0.3, // Rendah untuk konsistensi
+        temperature: 0.3
       });
 
-      const jawaban = response.choices[0].message.content.trim();
-      const tokensUsed = response.usage ? response.usage.total_tokens : 0;
+      // Validate response menggunakan shared service
+      const validation = validateResponse('chatbot', result.response);
 
       return {
-        jawaban,
-        tokensUsed,
-        model: 'gpt-3.5-turbo'
+        jawaban: validation.standardized,
+        tokensUsed: result.usage?.total_tokens || 0,
+        model: result.model,
+        isValid: validation.isValid
       };
     } catch (error) {
       console.error('Error dalam analisis AI:', error);
-      return 'Maaf, terjadi kesalahan dalam analisis data. Silakan coba lagi atau hubungi administrator.';
+      return {
+        jawaban: 'Maaf, terjadi kesalahan dalam analisis data. Silakan coba lagi atau hubungi administrator.',
+        tokensUsed: 0,
+        model: 'error',
+        isValid: false
+      };
     }
   }
 
@@ -144,35 +69,34 @@ Ingat: Anda adalah asisten analisis, bukan teknisi sistem. Fokus pada pemahaman 
    */
   async jawabPertanyaanUmum(pertanyaan) {
     try {
-      const prompt = `
-      Jawab pertanyaan pengguna tentang sistem monitoring server dalam bahasa Indonesia.
-      Pertanyaan: "${pertanyaan}"
-
-      Gunakan format yang telah ditentukan di system prompt untuk pertanyaan umum.
-      Berikan penjelasan yang sederhana dan mudah dipahami.
-      `;
-
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: this.systemPrompt },
-          { role: 'user', content: prompt }
-        ],
+      // Gunakan shared AI service untuk konsistensi
+      const result = await executeAICompletion([
+        { role: 'system', content: this.systemPrompt },
+        { role: 'user', content: `Jawab pertanyaan tentang sistem monitoring server: "${pertanyaan}"` }
+      ], {
         max_tokens: 300,
-        temperature: 0.2,
+        temperature: 0.2
       });
 
-      const jawaban = response.choices[0].message.content.trim();
-      const tokensUsed = response.usage ? response.usage.total_tokens : 0;
+      // Validate response
+      const validation = validateResponse('chatbot', result.response);
 
       return {
-        jawaban,
-        tokensUsed,
-        model: 'gpt-3.5-turbo'
+        jawaban: validation.standardized,
+        tokensUsed: result.usage?.total_tokens || 0,
+        model: result.model,
+        isValid: validation.isValid
       };
     } catch (error) {
       console.error('Error dalam menjawab pertanyaan:', error);
-      return 'Maaf, saya tidak dapat menjawab pertanyaan tersebut saat ini.';
+      return {
+        jawaban: 'Maaf, saya tidak dapat menjawab pertanyaan tersebut saat ini.',
+        tokensUsed: 0,
+        model: 'error',
+        isValid: false
+      };
+    }
+  }
     }
   }
 
