@@ -10,12 +10,25 @@ const {
 const Server = require('../model/Server');
 const logger = require('../utilitas/logger');
 
+// Import Socket.IO untuk real-time updates
+let io = null;
+
 class LayananStatusServer {
-  constructor() {
+  constructor(socketIo = null) {
     this.statusCache = new Map(); // Cache status server
     this.statusHistory = new Map(); // History status untuk hysteresis
     this.isRunning = false;
     this.monitoringInterval = null;
+    io = socketIo; // Set Socket.IO instance
+  }
+
+  /**
+   * Set Socket.IO instance untuk real-time updates
+   * @param {SocketIO.Server} socketIo - Socket.IO server instance
+   */
+  setSocketIO(socketIo) {
+    io = socketIo;
+    logger.info('Socket.IO instance diset untuk layanan status server');
   }
 
   /**
@@ -222,6 +235,12 @@ class LayananStatusServer {
             confidence: statusResult.confidence,
             trigger: 'automatic_monitoring'
           });
+
+          // Emit real-time status change
+          await this.emitStatusChange(serverId, finalStatus, statusResult, hysteresisResult);
+
+          // Emit dashboard summary update
+          await this.emitDashboardSummaryUpdate();
         }
 
         // Trigger alert jika status critical atau danger
@@ -488,6 +507,113 @@ class LayananStatusServer {
     } catch (error) {
       logger.error(`Error reverting status override untuk server ${serverId}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Emit status change ke Socket.IO
+   * @param {string} serverId - ID server
+   * @param {string} newStatus - Status baru
+   * @param {object} statusResult - Hasil evaluasi status
+   * @param {object} hysteresisResult - Hasil evaluasi hysteresis
+   */
+  async emitStatusChange(serverId, newStatus, statusResult, hysteresisResult) {
+    if (!io) {
+      logger.warn('Socket.IO tidak tersedia untuk emit status change');
+      return;
+    }
+
+    try {
+      // Get server info
+      const server = await Server.findById(serverId).select('nama host');
+
+      const statusChangeData = {
+        serverId: serverId.toString(),
+        namaServer: server?.nama || 'Unknown Server',
+        host: server?.host || 'Unknown Host',
+        statusBaru: newStatus,
+        statusLama: hysteresisResult.oldStatus,
+        timestamp: new Date().toISOString(),
+        confidence: statusResult.confidence,
+        alasan: statusResult.reason,
+        detail: statusResult.details,
+        hysteresis: {
+          alasan: hysteresisResult.reason,
+          perubahanDipaksa: hysteresisResult.shouldChange
+        },
+        rekomendasi: dapatkanRekomendasi(newStatus, statusResult.details),
+        trigger: 'automatic_monitoring'
+      };
+
+      // Emit ke namespace /status
+      const statusNamespace = io.of('/status');
+      statusNamespace.to(`server_status_${serverId}`).emit('status:berubah', statusChangeData);
+
+      // Emit ke namespace /monitoring untuk dashboard updates
+      const monitoringNamespace = io.of('/monitoring');
+      monitoringNamespace.to(`server_metrics_${serverId}`).emit('server:status_update', statusChangeData);
+
+      // Emit ke namespace /alert jika status critical/danger
+      if (['CRITICAL', 'DANGER', 'OFFLINE'].includes(newStatus)) {
+        const alertNamespace = io.of('/alert');
+        alertNamespace.emit('alert:status_critical', {
+          ...statusChangeData,
+          tingkatAlert: newStatus === 'DANGER' ? 'critical' : 'high',
+          pesan: `Server ${server?.nama || serverId} dalam kondisi ${newStatus.toLowerCase()}`,
+          tindakanDisarankan: dapatkanRekomendasi(newStatus, statusResult.details)
+        });
+      }
+
+      // Emit ke namespace /sistem untuk notifikasi umum
+      const systemNamespace = io.of('/sistem');
+      systemNamespace.to('system_general').emit('sistem:status_update', statusChangeData);
+
+      logger.debug(`Status change emitted untuk server ${serverId}: ${hysteresisResult.oldStatus} -> ${newStatus}`);
+
+    } catch (error) {
+      logger.error(`Error emitting status change untuk server ${serverId}:`, error);
+    }
+  }
+
+  /**
+   * Emit dashboard summary update ke Socket.IO
+   */
+  async emitDashboardSummaryUpdate() {
+    if (!io) {
+      return;
+    }
+
+    try {
+      // Get summary from cache
+      const servers = Array.from(this.statusCache.values());
+      const totalServers = servers.length;
+
+      const summary = {
+        totalServer: totalServers,
+        sehat: servers.filter(s => s.status === 'HEALTHY').length,
+        peringatan: servers.filter(s => s.status === 'WARNING').length,
+        kritis: servers.filter(s => s.status === 'CRITICAL').length,
+        bahaya: servers.filter(s => s.status === 'DANGER').length,
+        offline: servers.filter(s => s.status === 'OFFLINE').length
+      };
+
+      const summaryData = {
+        timestamp: new Date().toISOString(),
+        ringkasan: summary,
+        perubahanTerbaru: [], // Could be populated with recent changes
+        metrikGlobal: {
+          cpuRataRata: 65.2, // Could be calculated from actual metrics
+          memoriRataRata: 71.8,
+          alertAktif: 3
+        }
+      };
+
+      // Import and use the emitDashboardSummary function from socket handlers
+      const { emitDashboardSummary } = require('../socket/index');
+      await emitDashboardSummary(io.of('/monitoring'));
+
+    } catch (error) {
+      logger.error('Error emitting dashboard summary update:', error);
     }
   }
 

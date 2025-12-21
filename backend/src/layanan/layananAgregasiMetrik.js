@@ -8,10 +8,22 @@ const MetrikBaseline = require('../model/MetrikBaseline');
 const Server = require('../model/Server');
 const logger = require('../utilitas/logger');
 
+// Import Socket.IO untuk real-time updates
+let io = null;
+
 class LayananAgregasiMetrik {
   constructor() {
     this.isRunning = false;
     this.intervalIds = new Map();
+  }
+
+  /**
+   * Set Socket.IO instance untuk real-time updates
+   * @param {SocketIO.Server} socketIo - Socket.IO server instance
+   */
+  setSocketIO(socketIo) {
+    io = socketIo;
+    logger.info('Socket.IO instance diset untuk layanan agregasi metrik');
   }
 
   /**
@@ -195,6 +207,11 @@ class LayananAgregasiMetrik {
 
     // Buat agregat harian
     const aggregate = await MetrikAgregatHarian.hitungStatistikHarian(metrics, serverId, startOfDay);
+
+    // Emit real-time update jika Socket.IO tersedia
+    if (io) {
+      await this.emitAgregasiUpdate(serverId, 'harian', aggregate);
+    }
 
     logger.debug(`Agregat harian berhasil dibuat untuk server ${serverId}`);
     return aggregate;
@@ -417,6 +434,46 @@ class LayananAgregasiMetrik {
     } catch (error) {
       logger.error(`Error dalam rebuild agregat server ${serverId}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Emit agregasi update ke Socket.IO
+   * @param {string} serverId - ID server
+   * @param {string} tipeAgregasi - Tipe agregasi (harian, trend, baseline)
+   * @param {Object} dataAgregasi - Data agregasi
+   */
+  async emitAgregasiUpdate(serverId, tipeAgregasi, dataAgregasi) {
+    if (!io) {
+      logger.warn('Socket.IO tidak tersedia untuk emit agregasi update');
+      return;
+    }
+
+    try {
+      // Get server info
+      const server = await Server.findById(serverId).select('nama host');
+
+      const agregasiData = {
+        serverId: serverId.toString(),
+        namaServer: server?.nama || 'Unknown Server',
+        host: server?.host || 'Unknown Host',
+        tipeAgregasi,
+        data: dataAgregasi,
+        timestamp: new Date().toISOString()
+      };
+
+      // Emit ke namespace /monitoring
+      const monitoringNamespace = io.of('/monitoring');
+      monitoringNamespace.to(`server_metrics_${serverId}`).emit('agregasi:baru', agregasiData);
+
+      // Emit ke namespace /sistem untuk notifikasi umum
+      const systemNamespace = io.of('/sistem');
+      systemNamespace.to('system_general').emit('sistem:agregasi_update', agregasiData);
+
+      logger.debug(`Agregasi update emitted untuk server ${serverId}: ${tipeAgregasi}`);
+
+    } catch (error) {
+      logger.error(`Error emitting agregasi update untuk server ${serverId}:`, error);
     }
   }
 }

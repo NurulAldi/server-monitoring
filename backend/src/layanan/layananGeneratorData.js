@@ -6,6 +6,15 @@ const Server = require('../model/Server');
 const { logger } = require('../utilitas/logger');
 const { THRESHOLD_DEFAULT, INTERVAL_GENERATOR } = require('../utilitas/konstanta');
 
+// Import layanan status server menggunakan lazy loading untuk menghindari circular dependency
+let layananStatusServer = null;
+function getLayananStatusServer() {
+  if (!layananStatusServer) {
+    layananStatusServer = require('./layananStatusServer');
+  }
+  return layananStatusServer;
+}
+
 /**
  * DESKRIPSI: State machine untuk kondisi kesehatan server
  *
@@ -262,6 +271,16 @@ class GeneratorDataMetrik {
       // Simpan ke database
       const metrikBaru = new Metrik(dataMetrik);
       await metrikBaru.save();
+
+      // TRIGGER STATUS EVALUATION - Langkah 3: Evaluasi status server setelah data tersimpan
+      try {
+        const statusService = getLayananStatusServer();
+        await statusService.updateStatusServer(serverId);
+        logger.debug(`Status evaluation triggered untuk server ${serverId} setelah data generation`);
+      } catch (statusError) {
+        logger.error(`Failed to trigger status evaluation untuk server ${serverId}:`, statusError);
+        // Don't fail the entire operation if status evaluation fails
+      }
 
       // Update history untuk baseline
       this.updateBaselineHistory(serverId, metrics);

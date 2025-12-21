@@ -160,6 +160,17 @@ app.use(errorHandler);
 // Setup Socket.IO handlers
 setupSocketHandlers(io);
 
+// Initialize layananStatusServer with Socket.IO instance
+layananStatusServer.setSocketIO(io);
+
+// Initialize layananAlert with Socket.IO instance
+const layananAlert = require('./layanan/layananAlert');
+layananAlert.setSocketIO(io);
+
+// Initialize layananAgregasiMetrik with Socket.IO instance
+const layananAgregasiMetrik = require('./layanan/layananAgregasiMetrik');
+layananAgregasiMetrik.setSocketIO(io);
+
 // Fungsi untuk start server
 async function startServer() {
   try {
