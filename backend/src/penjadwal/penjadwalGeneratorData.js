@@ -5,6 +5,7 @@ const cron = require('node-cron');
 const { logger } = require('../utilitas/logger');
 const layananAlert = require('../layanan/layananAlert');
 const layananAi = require('../layanan/layananAi');
+const layananGeneratorData = require('../layanan/layananGeneratorData');
 const Server = require('../model/Server');
 const Pengguna = require('../model/Pengguna');
 const Metrik = require('../model/Metrik');
@@ -240,6 +241,30 @@ async function healthCheckSistem() {
 }
 
 /**
+ * DESKRIPSI: Generate data metrik untuk semua server aktif
+ *
+ * TUJUAN: Menghasilkan data simulasi kesehatan server secara periodik
+ *
+ * Dijalankan setiap 60 detik dengan variasi ±5 detik
+ */
+async function generateDataMetrikPeriodik() {
+  try {
+    logger.logSystem('METRICS_GENERATION_JOB_STARTED', 'Memulai generate data metrik periodik');
+
+    const result = await layananGeneratorData.generateDataSemuaServer();
+
+    logger.logSystem('METRICS_GENERATION_JOB_COMPLETED', {
+      totalServers: result.totalServers,
+      successCount: result.results.filter(r => r.success).length,
+      errorCount: result.results.filter(r => !r.success).length
+    });
+
+  } catch (error) {
+    logger.logError('METRICS_GENERATION_JOB_FAILED', error);
+  }
+}
+
+/**
  * DESKRIPSI: Inisialisasi semua penjadwal
  *
  * TUJUAN: Menjalankan semua tugas terjadwal saat aplikasi startup
@@ -247,6 +272,13 @@ async function healthCheckSistem() {
 function inisialisasiPenjadwal() {
   try {
     logger.logSystem('SCHEDULER_INITIALIZATION_STARTED', 'Memulai inisialisasi penjadwal');
+
+    // Generate data metrik setiap 60 detik
+    cron.schedule('*/1 * * * *', () => {
+      generateDataMetrikPeriodik();
+    }, {
+      timezone: 'Asia/Jakarta'
+    });
 
     // Health check setiap 10 menit
     cron.schedule('*/10 * * * *', () => {
@@ -321,5 +353,6 @@ module.exports = {
   kirimRingkasanHarian,
   kirimRekomendasiAI,
   cleanupDataLama,
-  healthCheckSistem
+  healthCheckSistem,
+  generateDataMetrikPeriodik
 };

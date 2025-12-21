@@ -26,12 +26,20 @@ const ruteMetrik = require('./rute/ruteMetrik');
 const ruteAlert = require('./rute/ruteAlert');
 const ruteChat = require('./rute/ruteChat');
 const ruteKonfigurasi = require('./rute/ruteKonfigurasi');
+const ruteAgregasi = require('./rute/ruteAgregasi');
+const ruteStatusServer = require('./rute/ruteStatusServer');
 
 // Import Socket.IO handlers
 const { setupSocketHandlers } = require('./socket/index');
 
 // Import scheduler untuk data generator
 const { inisialisasiPenjadwal } = require('./penjadwal/penjadwalGeneratorData');
+
+// Import scheduler untuk agregasi metrik
+const penjadwalAgregasiMetrik = require('./penjadwal/penjadwalAgregasiMetrik');
+
+// Import layanan status server
+const layananStatusServer = require('./layanan/layananStatusServer');
 
 // Buat aplikasi Express
 const app = express();
@@ -125,6 +133,8 @@ app.use('/api/metrik', ruteMetrik);
 app.use('/api/alert', ruteAlert);
 app.use('/api/chat', ruteChat);
 app.use('/api/konfigurasi', ruteKonfigurasi);
+app.use('/api/agregasi', ruteAgregasi);
+app.use('/api/status-server', ruteStatusServer);
 
 // 404 handler untuk route yang tidak ditemukan
 app.use('*', (req, res) => {
@@ -161,6 +171,14 @@ async function startServer() {
     inisialisasiPenjadwal();
     logger.logSystemActivity('SCHEDULER_STARTED', { status: 'success' });
 
+    // Start scheduler untuk agregasi metrik
+    await penjadwalAgregasiMetrik.start();
+    logger.logSystemActivity('METRICS_AGGREGATION_SCHEDULER_STARTED', { status: 'success' });
+
+    // Start layanan monitoring status server
+    await layananStatusServer.start();
+    logger.logSystemActivity('SERVER_STATUS_MONITORING_STARTED', { status: 'success' });
+
     // Start server
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, () => {
@@ -189,6 +207,13 @@ async function startServer() {
 
       server.close(async () => {
         console.log('✅ HTTP server closed');
+
+        // Stop schedulers
+        penjadwalAgregasiMetrik.stop();
+        console.log('✅ Metrics aggregation scheduler stopped');
+
+        layananStatusServer.stop();
+        console.log('✅ Server status monitoring stopped');
 
         // Close database connection
         const mongoose = require('mongoose');

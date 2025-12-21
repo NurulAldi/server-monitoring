@@ -97,10 +97,56 @@ const serverSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: {
-      values: ['online', 'offline', 'unknown'],
+      values: ['aktif', 'nonaktif', 'unknown'],
       message: 'Status server tidak valid'
     },
     default: 'unknown'
+  },
+
+  // Status kesehatan server (dari monitoring)
+  statusServer: {
+    type: String,
+    enum: {
+      values: ['HEALTHY', 'WARNING', 'CRITICAL', 'DANGER', 'OFFLINE', 'MAINTENANCE'],
+      message: 'Status server tidak valid'
+    },
+    default: 'UNKNOWN'
+  },
+
+  waktuStatusTerakhir: {
+    type: Date,
+    default: null
+  },
+
+  detailStatus: {
+    confidence: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 0
+    },
+    reason: {
+      type: String,
+      maxlength: [500, 'Alasan status maksimal 500 karakter']
+    },
+    recommendations: [{
+      priority: {
+        type: String,
+        enum: ['low', 'medium', 'high', 'critical']
+      },
+      action: {
+        type: String,
+        maxlength: [200, 'Aksi maksimal 200 karakter']
+      },
+      type: {
+        type: String,
+        enum: ['monitoring', 'investigation', 'optimization', 'immediate_action', 'emergency']
+      }
+    }],
+    override: {
+      type: Boolean,
+      default: false
+    }
   },
 
   terakhirOnline: {
@@ -353,9 +399,13 @@ serverSchema.index({ pemilik: 1, diperbaruiPada: -1 }); // Ownership + sort terb
 serverSchema.index({ status: 1 }); // Filter status
 serverSchema.index({ jenisServer: 1 }); // Filter jenis
 serverSchema.index({ alamatIp: 1 }, { unique: true }); // IP unik global (bukan per user)
+serverSchema.index({ statusServer: 1 }); // Filter status kesehatan
+serverSchema.index({ 'detailStatus.override': 1 }); // Filter override status
+serverSchema.index({ waktuStatusTerakhir: -1 }); // Sort status terbaru
 
 // Compound index untuk query kompleks
 serverSchema.index({ pemilik: 1, status: 1, jenisServer: 1 });
+serverSchema.index({ pemilik: 1, statusServer: 1 }); // Status kesehatan per user
 
 // Export model
 const Server = mongoose.model('Server', serverSchema);

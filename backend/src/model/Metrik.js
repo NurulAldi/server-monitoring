@@ -179,6 +179,30 @@ const metrikSchema = new mongoose.Schema({
     default: STATUS_OK
   },
 
+  // Skor kesehatan (0-100) untuk AI analysis
+  skorKesehatan: {
+    type: Number,
+    min: [0, 'Skor kesehatan minimal 0'],
+    max: [100, 'Skor kesehatan maksimal 100'],
+    default: 100
+  },
+
+  // Kondisi terdeteksi oleh state machine
+  kondisiTerdeteksi: {
+    type: String,
+    enum: {
+      values: ['NORMAL', 'WARNING', 'CRITICAL'],
+      message: 'Kondisi terdeteksi tidak valid'
+    },
+    default: 'NORMAL'
+  },
+
+  // Flag untuk event penting
+  isEventImportant: {
+    type: Boolean,
+    default: false
+  },
+
   // Metadata pengumpulan
   metadataPengumpulan: {
     durasiResponseMs: {
@@ -206,15 +230,30 @@ const metrikSchema = new mongoose.Schema({
 });
 
 /**
- * INDEXING STRATEGI
+ * INDEXING STRATEGI OPTIMASI
  *
- * 1. Compound index untuk query metrics berdasarkan server dan waktu
- * 2. TTL index untuk auto-delete data lama (30 hari)
- * 3. Single index untuk query cepat berdasarkan status
+ * 1. Primary time-series index untuk dashboard real-time
+ * 2. Status & kondisi indexes untuk alerting
+ * 3. TTL index untuk stratified storage (30 hari raw data)
+ * 4. Compound indexes untuk query kompleks
+ * 5. Partial indexes untuk data penting
  */
-metrikSchema.index({ serverId: 1, timestampPengumpulan: -1 });
-metrikSchema.index({ statusKesehatan: 1 });
-metrikSchema.index({ timestampPengumpulan: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 }); // 30 hari
+metrikSchema.index({ serverId: 1, timestampPengumpulan: -1 }); // Primary time-series
+metrikSchema.index({ statusKesehatan: 1, timestampPengumpulan: -1 }); // Alert filtering
+metrikSchema.index({ kondisiTerdeteksi: 1, serverId: 1, timestampPengumpulan: -1 }); // State machine queries
+metrikSchema.index({ skorKesehatan: 1, timestampPengumpulan: -1 }); // AI analysis
+metrikSchema.index({ isEventImportant: 1, timestampPengumpulan: -1 }); // Important events
+metrikSchema.index({ serverId: 1, timestampPengumpulan: -1, statusKesehatan: 1 }); // Dashboard compound
+metrikSchema.index({ timestampPengumpulan: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 }); // TTL 30 hari
+
+// Partial index untuk data critical saja
+metrikSchema.index(
+  { serverId: 1, timestampPengumpulan: -1 },
+  {
+    partialFilterExpression: { kondisiTerdeteksi: 'CRITICAL' },
+    name: 'critical_events_partial'
+  }
+);
 
 /**
  * VIRTUALS
