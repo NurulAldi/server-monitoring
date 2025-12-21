@@ -101,18 +101,88 @@ const penggunaSchema = new mongoose.Schema({
     default: null
   },
 
-  // Reset password token (untuk fitur lupa password)
-  tokenResetPassword: {
+  // Pengaturan email dan notifikasi
+  pengaturanEmail: {
+    // Notifikasi alert server
+    alertKritis: {
+      type: Boolean,
+      default: true
+    },
+    alertPeringatan: {
+      type: Boolean,
+      default: true
+    },
+    alertRecovery: {
+      type: Boolean,
+      default: true
+    },
+
+    // Frekuensi notifikasi
+    frekuensiNotifikasi: {
+      type: String,
+      enum: {
+        values: ['immediate', 'hourly', 'daily', 'weekly'],
+        message: 'Frekuensi notifikasi tidak valid'
+      },
+      default: 'immediate'
+    },
+
+    // Ringkasan periodik
+    ringkasanHarian: {
+      type: Boolean,
+      default: true
+    },
+    ringkasanMingguan: {
+      type: Boolean,
+      default: true
+    },
+
+    // Rekomendasi AI
+    rekomendasiAi: {
+      type: Boolean,
+      default: true
+    },
+
+    // Zona waktu untuk scheduling
+    zonaWaktu: {
+      type: String,
+      default: 'Asia/Jakarta'
+    }
+  },
+
+  // Status email
+  emailTerverifikasi: {
+    type: Boolean,
+    default: false
+  },
+
+  tokenVerifikasiEmail: {
     type: String,
     default: null,
     select: false
   },
 
-  tokenResetPasswordExpired: {
+  tokenVerifikasiEmailExpired: {
     type: Date,
     default: null,
     select: false
-  }
+  },
+
+  // Tracking email dan notifikasi
+  statistikEmail: {
+    totalEmailTerkirim: {
+      type: Number,
+      default: 0
+    },
+    emailTerakhirDikirim: {
+      type: Date,
+      default: null
+    },
+    emailGagal: {
+      type: Number,
+      default: 0
+    }
+  },
 }, {
   // Options
   timestamps: false, // Manual timestamps

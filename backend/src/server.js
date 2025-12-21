@@ -31,7 +31,7 @@ const ruteKonfigurasi = require('./rute/ruteKonfigurasi');
 const { setupSocketHandlers } = require('./socket/index');
 
 // Import scheduler untuk data generator
-const { startScheduler } = require('./penjadwal/penjadwalGeneratorData');
+const { inisialisasiPenjadwal } = require('./penjadwal/penjadwalGeneratorData');
 
 // Buat aplikasi Express
 const app = express();
@@ -158,7 +158,7 @@ async function startServer() {
     logger.logSystemActivity('DATABASE_CONNECTED', { status: 'success' });
 
     // Start scheduler untuk generate data otomatis
-    startScheduler();
+    inisialisasiPenjadwal();
     logger.logSystemActivity('SCHEDULER_STARTED', { status: 'success' });
 
     // Start server
