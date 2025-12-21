@@ -1,0 +1,325 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  ReferenceLine,
+  Area,
+  AreaChart
+} from 'recharts'
+import { useLoadMetrics } from '../../soket/useMetrics'
+
+interface DataLoad {
+  waktu: string
+  load1: number   // 1-minute load average
+  load5: number   // 5-minute load average
+  load15: number  // 15-minute load average
+  cpuCount: number
+  loadPercent: number // load1 / cpuCount * 100
+  timestamp: number
+}
+
+interface PropsChartLoad {
+  serverId?: string
+  height?: number
+  cpuCount?: number
+  showArea?: boolean
+}
+
+export function ChartLoad({
+  serverId,
+  height = 300,
+  cpuCount = 4,
+  showArea = false
+}: PropsChartLoad) {
+  const { data: socketData, currentLoad, isOnline } = useLoadMetrics(serverId)
+  const [data, setData] = useState<DataLoad[]>([])
+
+  useEffect(() => {
+    if (socketData && socketData.length > 0) {
+      // Transform socket data ke format chart
+      const transformedData: DataLoad[] = socketData.map(item => ({
+        waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }),
+        load1: item.load1 || 0,
+        load5: item.load5 || 0,
+        load15: item.load15 || 0,
+        cpuCount: item.cpuCount || cpuCount,
+        loadPercent: item.loadPercent || 0,
+        timestamp: item.timestamp
+      }))
+      setData(transformedData)
+    } else {
+      // Fallback ke mock data jika socket offline
+      const mockData: DataLoad[] = []
+      const now = Date.now()
+
+      for (let i = 59; i >= 0; i--) {
+        const timestamp = now - (i * 5000) // 5 detik intervals
+        const baseLoad = 1 + Math.random() * 2 // Base load 1-3
+        const trend = Math.sin(i * 0.05) * 0.5 // Slow trend
+        const spike = Math.random() > 0.95 ? Math.random() * 3 : 0 // Occasional spikes
+
+        const load1 = Math.max(0, baseLoad + trend + spike)
+        const load5 = load1 * 0.8 + Math.random() * 0.4 // Slightly lower and more stable
+        const load15 = load5 * 0.9 + Math.random() * 0.2 // Most stable
+
+        mockData.push({
+          waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          }),
+          load1: Math.round(load1 * 100) / 100,
+          load5: Math.round(load5 * 100) / 100,
+          load15: Math.round(load15 * 100) / 100,
+          cpuCount,
+          loadPercent: Math.round((load1 / cpuCount) * 100),
+          timestamp
+        })
+      }
+
+      setData(mockData)
+    }
+  }, [socketData, cpuCount])
+
+  const currentData = currentLoad || (data.length > 0 ? data[data.length - 1] : null)
+  const currentLoadPercent = currentData ? currentData.loadPercent : 0
+
+  const isCritical = currentLoadPercent >= 200 // 2x CPU count
+  const isWarning = currentLoadPercent >= 150 && !isCritical
+  const isHigh = currentLoadPercent >= 100 && !isWarning
+
+  const formatLoad = (value: number) => value.toFixed(2)
+
+  const ChartComponent = showArea ? AreaChart : LineChart
+
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-heading text-text-primary">System Load</h3>
+          <p className="text-body-small text-text-secondary">Load averages over time</p>
+        </div>
+        <div className="text-right">
+          <div className={`text-2xl font-bold ${
+            isCritical ? 'text-status-critical' :
+            isWarning ? 'text-status-warning' :
+            isHigh ? 'text-accent-secondary' :
+            'text-status-online'
+          }`}>
+            {currentLoadPercent}%
+          </div>
+          <div className="text-body-small text-text-muted">
+            Load ({cpuCount} CPUs)
+          </div>
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={height}>
+        <ChartComponent data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="var(--data-grid)"
+            opacity={0.3}
+          />
+
+          <XAxis
+            dataKey="waktu"
+            stroke="var(--text-secondary)"
+            fontSize={11}
+            tick={{ fill: 'var(--text-secondary)' }}
+            axisLine={{ stroke: 'var(--bg-border)' }}
+          />
+
+          <YAxis
+            stroke="var(--text-secondary)"
+            fontSize={11}
+            tick={{ fill: 'var(--text-secondary)' }}
+            axisLine={{ stroke: 'var(--bg-border)' }}
+            label={{ value: 'Load', angle: -90, position: 'insideLeft' }}
+            domain={[0, 'dataMax + 1']}
+          />
+
+          <Tooltip
+            contentStyle={{
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--bg-border)',
+              borderRadius: '6px',
+              color: 'var(--text-primary)'
+            }}
+            formatter={(value: number, name: string) => {
+              return [formatLoad(value), name]
+            }}
+          />
+
+          <Legend
+            wrapperStyle={{ color: 'var(--text-secondary)' }}
+          />
+
+          {/* Threshold lines */}
+          <ReferenceLine
+            y={cpuCount * 2}
+            stroke="var(--status-critical)"
+            strokeDasharray="5 5"
+            label={{ value: "Critical", position: "topRight", fill: "var(--status-critical)" }}
+          />
+          <ReferenceLine
+            y={cpuCount * 1.5}
+            stroke="var(--status-warning)"
+            strokeDasharray="5 5"
+            label={{ value: "Warning", position: "topRight", fill: "var(--status-warning)" }}
+          />
+          <ReferenceLine
+            y={cpuCount}
+            stroke="var(--accent-secondary)"
+            strokeDasharray="5 5"
+            label={{ value: "High", position: "topRight", fill: "var(--accent-secondary)" }}
+          />
+
+          {/* Load lines */}
+          {showArea ? (
+            <>
+              <Area
+                type="monotone"
+                dataKey="load15"
+                stackId="1"
+                stroke="#9D4EDD"
+                fill="#9D4EDD"
+                fillOpacity={0.1}
+                name="15-min"
+                animationDuration={300}
+              />
+              <Area
+                type="monotone"
+                dataKey="load5"
+                stackId="1"
+                stroke="#00D4FF"
+                fill="#00D4FF"
+                fillOpacity={0.2}
+                name="5-min"
+                animationDuration={300}
+              />
+              <Area
+                type="monotone"
+                dataKey="load1"
+                stackId="1"
+                stroke="#00FF88"
+                fill="#00FF88"
+                fillOpacity={0.3}
+                name="1-min"
+                animationDuration={300}
+              />
+            </>
+          ) : (
+            <>
+              <Line
+                type="monotone"
+                dataKey="load1"
+                stroke="#00FF88"
+                strokeWidth={3}
+                name="1-min"
+                dot={false}
+                animationDuration={300}
+              />
+              <Line
+                type="monotone"
+                dataKey="load5"
+                stroke="#00D4FF"
+                strokeWidth={2}
+                name="5-min"
+                dot={false}
+                animationDuration={300}
+              />
+              <Line
+                type="monotone"
+                dataKey="load15"
+                stroke="#9D4EDD"
+                strokeWidth={1}
+                strokeDasharray="5 5"
+                name="15-min"
+                dot={false}
+                animationDuration={300}
+              />
+            </>
+          )}
+        </ChartComponent>
+      </ResponsiveContainer>
+
+      {/* Load stats */}
+      {currentData && (
+        <div className="grid grid-cols-3 gap-4 mt-6">
+          <div className="text-center">
+            <div className="text-lg font-semibold text-status-online">
+              {formatLoad(currentData.load1)}
+            </div>
+            <div className="text-body-small text-text-secondary">1-min</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-semibold text-accent-tertiary">
+              {formatLoad(currentData.load5)}
+            </div>
+            <div className="text-body-small text-text-secondary">5-min</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-semibold text-accent-primary">
+              {formatLoad(currentData.load15)}
+            </div>
+            <div className="text-body-small text-text-secondary">15-min</div>
+          </div>
+        </div>
+      )}
+
+      {/* Load explanation */}
+      <div className="mt-4 p-3 rounded-lg bg-bg-tertiary border border-bg-border">
+        <div className="text-body-small text-text-secondary mb-2">
+          <strong>Load Average:</strong> Number of processes waiting for CPU time
+        </div>
+        <div className="text-body-small text-text-muted">
+          • 1-min: Current activity level<br/>
+          • 5-min: Trend over last 5 minutes<br/>
+          • 15-min: Long-term trend over last 15 minutes
+        </div>
+      </div>
+
+      {/* Status indicators */}
+      <div className="flex items-center justify-between mt-4 text-body-small">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-status-online"></div>
+            <span className="text-text-secondary">Normal (&lt;{cpuCount})</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-accent-secondary"></div>
+            <span className="text-text-secondary">High ({cpuCount}-{cpuCount * 1.5})</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-status-warning"></div>
+            <span className="text-text-secondary">Warning ({cpuCount * 1.5}-{cpuCount * 2})</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-status-critical"></div>
+            <span className="text-text-secondary">Critical (&gt;{cpuCount * 2})</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-status-online animate-pulse' : 'bg-status-offline'}`}></div>
+          <span className="text-text-secondary">{isOnline ? 'Live' : 'Offline'}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default ChartLoad
