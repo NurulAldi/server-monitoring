@@ -119,7 +119,7 @@ export function ChartCPU({
             stroke={statusColor}
             strokeWidth={2}
             fill="url(#cpuGradient)"
-            animationDuration={300}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>

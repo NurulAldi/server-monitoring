@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   LineChart,
   Line,
@@ -44,83 +44,83 @@ export function ChartDisk({
   showIOPS = false
 }: PropsChartDisk) {
   const { data: socketData, currentDisk, isOnline } = useDiskMetrics(serverId)
-  const [data, setData] = useState<DataDisk[]>([])
+  const [history, setHistory] = useState<DataDisk[]>([])
 
-  useEffect(() => {
-    if (socketData && socketData.length > 0) {
-      // Transform socket data ke format chart
-      const transformedData: DataDisk[] = socketData.map(item => ({
-        waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', {
+  const mockData = useMemo(() => {
+    const mock: DataDisk[] = []
+    const now = Date.now()
+
+    for (let i = 59; i >= 0; i--) {
+      const timestamp = now - (i * 3000) // 3 detik intervals
+      const baseUsage = 200 + Math.random() * 100 // Base usage around 200-300GB
+      const growth = (60 - i) * 2 // Gradual increase over time
+      const fluctuation = Math.sin(i * 0.1) * 20 // Sine wave fluctuation
+
+      const used = Math.min(totalDisk, baseUsage + growth + fluctuation)
+      const usagePercent = (used / totalDisk) * 100
+
+      mock.push({
+        waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit'
         }),
-        used: item.used || 0,
-        available: item.available || 0,
-        total: item.total || totalDisk,
-        usagePercent: item.usagePercent || 0,
-        readSpeed: item.readSpeed || 0,
-        writeSpeed: item.writeSpeed || 0,
-        iops: item.iops || 0,
-        timestamp: item.timestamp
-      }))
-      setData(transformedData)
-    } else {
-      // Fallback ke mock data jika socket offline
-      const mockData: DataDisk[] = []
-      const now = Date.now()
-
-      for (let i = 59; i >= 0; i--) {
-        const timestamp = now - (i * 3000) // 3 detik intervals
-        const baseUsage = 200 + Math.random() * 100 // Base usage around 200-300GB
-        const growth = (60 - i) * 2 // Gradual increase over time
-        const fluctuation = Math.sin(i * 0.1) * 20 // Sine wave fluctuation
-
-        const used = Math.min(totalDisk, baseUsage + growth + fluctuation)
-        const usagePercent = (used / totalDisk) * 100
-
-        mockData.push({
-          waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          }),
-          used: Math.round(used),
-          available: totalDisk - used,
-          total: totalDisk,
-          usagePercent: Math.round(usagePercent),
-          readSpeed: 50 + Math.random() * 200, // 50-250 MB/s
-          writeSpeed: 30 + Math.random() * 150, // 30-180 MB/s
-          iops: 1000 + Math.random() * 2000, // 1000-3000 IOPS
-          timestamp
-        })
-      }
-
-      setData(mockData)
+        used: Math.round(used),
+        available: Math.round(totalDisk - used),
+        total: totalDisk,
+        usagePercent: Math.round(usagePercent),
+        readSpeed: Math.round(50 + Math.random() * 200), // 50-250 MB/s
+        writeSpeed: Math.round(30 + Math.random() * 150), // 30-180 MB/s
+        iops: Math.round(1000 + Math.random() * 2000), // 1000-3000 IOPS
+        timestamp
+      })
     }
-  }, [socketData, totalDisk])
 
-  const currentData = currentDisk || (data.length > 0 ? data[data.length - 1] : null)
+    return mock
+  }, [totalDisk])
+
+  useEffect(() => {
+    if (socketData && socketData.length > 0) {
+      const newPoint = socketData[0]
+      setHistory(prev => {
+        const last = prev[prev.length - 1]
+        if (!last || last.timestamp !== newPoint.timestamp) {
+          const updated = [...prev, newPoint].slice(-60)
+          // Deep equality check
+          if (JSON.stringify(prev) !== JSON.stringify(updated)) {
+            return updated
+          }
+        }
+        return prev
+      })
+    } else {
+      setHistory(prev => prev.length > 0 ? [] : prev)
+    }
+  }, [socketData])
+
+  const chartData = useMemo(() => history.length > 0 ? history : mockData, [history, mockData])
+
+  const currentData = currentDisk || (chartData.length > 0 ? chartData[chartData.length - 1] : null)
   const currentUsage = currentData ? currentData.usagePercent : 0
 
   const isCritical = currentUsage >= 95
   const isWarning = currentUsage >= 85 && !isCritical
   const isHigh = currentUsage >= 75 && !isWarning
 
-  const formatBytes = (bytes: number) => {
-    if (bytes >= 1000) return `${(bytes / 1000).toFixed(1)} TB`
-    return `${bytes} GB`
-  }
+const formatBytes = useCallback((bytes: number) => {
+      if (bytes >= 1000) return `${(bytes / 1000).toFixed(1)} TB`
+      return `${bytes} GB`
+    }, [])
 
-  const formatSpeed = (speed: number) => {
-    if (speed >= 1000) return `${(speed / 1000).toFixed(2)} GB/s`
-    return `${speed.toFixed(0)} MB/s`
-  }
+    const formatSpeed = useCallback((speed: number) => {
+      if (speed >= 1000) return `${(speed / 1000).toFixed(2)} GB/s`
+      return `${speed.toFixed(0)} MB/s`
+    }, [])
 
-  const formatIOPS = (iops: number) => {
-    if (iops >= 1000) return `${(iops / 1000).toFixed(1)}K`
-    return iops.toString()
-  }
+    const formatIOPS = useCallback((iops: number) => {
+      if (iops >= 1000) return `${(iops / 1000).toFixed(1)}K`
+      return iops.toString()
+    }, [])
 
   return (
     <div className="w-full">
@@ -144,8 +144,8 @@ export function ChartDisk({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={height}>
-        <ComposedChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <ResponsiveContainer width="100%" height={height} debounce={1}>
+          <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid
             strokeDasharray="3 3"
             stroke="#393c41"
@@ -241,6 +241,7 @@ export function ChartDisk({
             fill="#00d448"
             fillOpacity={0.1}
             name="Available"
+            isAnimationActive={false}
           />
 
           {/* Area for used space */}
@@ -253,6 +254,7 @@ export function ChartDisk({
             fill="#3e6ae1"
             fillOpacity={0.6}
             name="Used"
+            isAnimationActive={false}
           />
 
           {/* I/O lines (optional) */}
@@ -266,7 +268,7 @@ export function ChartDisk({
                 strokeWidth={2}
                 name="Read Speed"
                 dot={false}
-                animationDuration={300}
+                isAnimationActive={false}
               />
               <Line
                 yAxisId="io"
@@ -276,7 +278,7 @@ export function ChartDisk({
                 strokeWidth={2}
                 name="Write Speed"
                 dot={false}
-                animationDuration={300}
+                isAnimationActive={false}
               />
             </>
           )}
@@ -287,12 +289,13 @@ export function ChartDisk({
               yAxisId="io"
               type="monotone"
               dataKey="iops"
-              stroke="#9D4EDD"
+              stroke="#8a8d91"
               strokeWidth={1}
               strokeDasharray="5 5"
+              isAnimationActive={false}
               name="IOPS"
               dot={false}
-              animationDuration={300}
+              isAnimationActive={false}
             />
           )}
         </ComposedChart>

@@ -57,7 +57,14 @@ export function ChartResponseTime({
         timestamp: item.timestamp,
         endpoint: item.endpoint
       }))
-      setData(transformedData)
+      
+      // Deep equality check - only update if data actually changed
+      setData(prev => {
+        if (JSON.stringify(prev) !== JSON.stringify(transformedData)) {
+          return transformedData
+        }
+        return prev
+      })
 
       // Calculate trend line
       if (showTrend && transformedData.length > 0) {
@@ -66,7 +73,14 @@ export function ChartResponseTime({
           waktu: item.waktu,
           trend: calculateMovingAverage(sorted.slice(0, index + 1).map(d => d.responseTime))
         }))
-        setTrendData(trend)
+        
+        // Deep equality check for trend data
+        setTrendData(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(trend)) {
+            return trend
+          }
+          return prev
+        })
       }
     } else {
       // Fallback ke mock data jika socket offline
@@ -155,9 +169,9 @@ export function ChartResponseTime({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={height}>
+      <ResponsiveContainer width="100%" height={height} debounce={1}>
         {showScatter ? (
-          <ScatterChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <ScatterChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} isAnimationActive={false}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="#393c41"
@@ -234,10 +248,11 @@ export function ChartResponseTime({
               name="responseTime"
               data={data}
               fill={(entry: any) => getResponseTimeColor(entry.responseTime)}
+              isAnimationActive={false}
             />
           </ScatterChart>
         ) : (
-          <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} isAnimationActive={false}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="#393c41"
@@ -300,7 +315,7 @@ export function ChartResponseTime({
               strokeWidth={2}
               name="Response Time"
               dot={false}
-              animationDuration={300}
+              isAnimationActive={false}
             />
 
             {/* Trend line */}
@@ -314,7 +329,7 @@ export function ChartResponseTime({
                 strokeDasharray="5 5"
                 name="Trend"
                 dot={false}
-                animationDuration={300}
+                isAnimationActive={false}
               />
             )}
           </LineChart>

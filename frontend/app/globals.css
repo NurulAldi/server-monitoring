@@ -105,7 +105,6 @@
     @apply bg-gradient-to-r from-accent-blue to-high-contrast bg-clip-text text-transparent;
   }
 }
-}
 
 /* Typography scale */
 .text-display {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import {
   LineChart,
   Line,
@@ -42,78 +42,93 @@ export function ChartNetwork({
 }: PropsChartNetwork) {
   const { data: socketData, currentNetwork, isOnline } = useNetworkMetrics(serverId)
   const [data, setData] = useState<DataNetwork[]>([])
+  const [history, setHistory] = useState<DataNetwork[]>([])
 
-  useEffect(() => {
-    if (socketData && socketData.length > 0) {
-      // Transform socket data ke format chart
-      const transformedData: DataNetwork[] = socketData.map(item => ({
-        waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', {
+  const mockData = useMemo(() => {
+    const mock: DataNetwork[] = []
+    const now = Date.now()
+
+    for (let i = 59; i >= 0; i--) {
+      const timestamp = now - (i * 2000) // 2 detik intervals
+      const baseUpload = 10 + Math.random() * 50
+      const baseDownload = 50 + Math.random() * 200
+      const spike = Math.random() > 0.95 ? Math.random() * 300 : 0
+
+      mock.push({
+        waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit'
         }),
-        upload: item.upload || 0,
-        download: item.download || 0,
-        total: (item.upload || 0) + (item.download || 0),
-        packetsIn: item.packetsIn || 0,
-        packetsOut: item.packetsOut || 0,
-        errors: item.errors || 0,
-        timestamp: item.timestamp
-      }))
-      setData(transformedData)
+        upload: Math.min(maxBandwidth, baseUpload + spike * 0.3),
+        download: Math.min(maxBandwidth, baseDownload + spike),
+        total: 0, // akan dihitung
+        packetsIn: Math.floor(Math.random() * 1000) + 500,
+        packetsOut: Math.floor(Math.random() * 800) + 300,
+        errors: Math.random() > 0.9 ? Math.floor(Math.random() * 10) : 0,
+        timestamp
+      })
+    }
+
+    // Hitung total bandwidth
+    mock.forEach(item => {
+      item.total = item.upload + item.download
+    })
+
+    return mock
+  }, [maxBandwidth])
+
+  useEffect(() => {
+    if (socketData && socketData.length > 0) {
+      // Add new data point to history
+      const newPoint = socketData[0] // since socketData is [current]
+      setHistory(prev => {
+        const last = prev[prev.length - 1]
+        // Only add if timestamp is different (prevent duplicates)
+        if (!last || last.timestamp !== newPoint.timestamp) {
+          const updated = [...prev, newPoint].slice(-60)
+          // Deep equality check
+          if (JSON.stringify(prev) !== JSON.stringify(updated)) {
+            return updated
+          }
+        }
+        return prev
+      })
     } else {
       // Fallback ke mock data jika socket offline
-      const mockData: DataNetwork[] = []
-      const now = Date.now()
-
-      for (let i = 59; i >= 0; i--) {
-        const timestamp = now - (i * 2000) // 2 detik intervals
-        const baseUpload = 10 + Math.random() * 50
-        const baseDownload = 50 + Math.random() * 200
-        const spike = Math.random() > 0.95 ? Math.random() * 300 : 0
-
-        mockData.push({
-          waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          }),
-          upload: Math.min(maxBandwidth, baseUpload + spike * 0.3),
-          download: Math.min(maxBandwidth, baseDownload + spike),
-          total: 0, // akan dihitung
-          packetsIn: Math.floor(Math.random() * 1000) + 500,
-          packetsOut: Math.floor(Math.random() * 800) + 300,
-          errors: Math.random() > 0.9 ? Math.floor(Math.random() * 10) : 0,
-          timestamp
-        })
-      }
-
-      // Hitung total bandwidth
-      mockData.forEach(item => {
-        item.total = item.upload + item.download
-      })
-
-      setData(mockData)
+      setHistory(prev => prev.length > 0 ? [] : prev)
     }
-  }, [socketData, maxBandwidth])
+  }, [socketData])
 
-  const currentData = currentNetwork || (data.length > 0 ? data[data.length - 1] : null)
+  const chartData = useMemo(() => history.length > 0 ? history : mockData, [history, mockData])
+
+  const currentData = currentNetwork || (chartData.length > 0 ? chartData[chartData.length - 1] : null)
   const currentUtilization = currentData ? (currentData.total / maxBandwidth * 100) : 0
 
   const isCritical = currentUtilization >= 95
   const isWarning = currentUtilization >= 80 && !isCritical
 
-  const formatBandwidth = (value: number) => {
+  const formatBandwidth = useCallback((value: number) => {
     if (value >= 1000) return `${(value / 1000).toFixed(2)} Gbps`
     if (value >= 1) return `${value.toFixed(1)} Mbps`
     return `${(value * 1000).toFixed(0)} Kbps`
-  }
+  }, [])
 
-  const formatPackets = (value: number) => {
+  const formatPackets = useCallback((value: number) => {
     if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
     if (value >= 1000) return `${(value / 1000).toFixed(1)}K`
     return value.toString()
-  }
+  }, [])
+
+  const tooltipFormatter = useCallback((value: number, name: string) => {
+    if (name === 'Upload' || name === 'Download') {
+      return [formatBandwidth(value), name]
+    }
+    if (name === 'Packets In' || name === 'Packets Out') {
+      return [formatPackets(value), name]
+    }
+    return [value, name]
+  }, [formatBandwidth, formatPackets])
 
   return (
     <div className="w-full">
@@ -136,8 +151,8 @@ export function ChartNetwork({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={height}>
-        <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <ResponsiveContainer width="100%" height={height} debounce={1}>
+        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} isAnimationActive={false}>
           <CartesianGrid
             strokeDasharray="3 3"
             stroke="#393c41"
@@ -182,15 +197,7 @@ export function ChartNetwork({
               borderRadius: '6px',
               color: '#eeeeee'
             }}
-            formatter={(value: number, name: string) => {
-              if (name === 'Upload' || name === 'Download') {
-                return [formatBandwidth(value), name]
-              }
-              if (name === 'Packets In' || name === 'Packets Out') {
-                return [formatPackets(value), name]
-              }
-              return [value, name]
-            }}
+            formatter={tooltipFormatter}
           />
 
           <Legend
@@ -222,7 +229,7 @@ export function ChartNetwork({
             strokeWidth={2}
             name="Download"
             dot={false}
-            animationDuration={300}
+            isAnimationActive={false}
           />
           <Line
             yAxisId="bandwidth"
@@ -232,10 +239,10 @@ export function ChartNetwork({
             strokeWidth={2}
             name="Upload"
             dot={false}
-            animationDuration={300}
+            isAnimationActive={false}
           />
 
-          {/* Packet lines (optional) */}
+          {/* Packet lines */}
           {showPackets && (
             <>
               <Line

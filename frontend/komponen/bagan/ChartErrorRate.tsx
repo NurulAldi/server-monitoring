@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   AreaChart,
   Area,
@@ -43,30 +43,11 @@ export function ChartErrorRate({
 }: PropsChartErrorRate) {
   const { data: socketData, currentErrors, isOnline } = useErrorRateMetrics()
   const [data, setData] = useState<DataErrorRate[]>([])
+  const [history, setHistory] = useState<DataErrorRate[]>([])
 
-  useEffect(() => {
-    if (socketData && socketData.length > 0) {
-      // Transform socket data ke format chart
-      const transformedData: DataErrorRate[] = socketData.map(item => ({
-        waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        }),
-        totalRequests: item.totalRequests || 0,
-        successfulRequests: item.successfulRequests || 0,
-        error4xx: item.error4xx || 0,
-        error5xx: item.error5xx || 0,
-        timeoutErrors: item.timeoutErrors || 0,
-        networkErrors: item.networkErrors || 0,
-        errorRate: item.errorRate || 0,
-        timestamp: item.timestamp
-      }))
-      setData(transformedData)
-    } else {
-      // Fallback ke mock data jika socket offline
-      const mockData: DataErrorRate[] = []
-      const now = Date.now()
+  const mockData = useMemo(() => {
+    const mock: DataErrorRate[] = []
+    const now = Date.now()
 
       for (let i = 59; i >= 0; i--) {
         const timestamp = now - (i * 2000) // 2 detik intervals
@@ -87,36 +68,55 @@ export function ChartErrorRate({
         const timeoutErrors = Math.round(errorCount * (0.05 + Math.random() * 0.1)) // 5-15% timeouts
         const networkErrors = errorCount - error4xx - error5xx - timeoutErrors
 
-        mockData.push({
-          waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          }),
-          totalRequests,
-          successfulRequests,
-          error4xx,
-          error5xx,
-          timeoutErrors,
-          networkErrors,
-          errorRate: totalErrorRate,
-          timestamp
-        })
-      }
-
-      setData(mockData)
+      mock.push({
+        waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }),
+        totalRequests,
+        successfulRequests,
+        error4xx,
+        error5xx,
+        timeoutErrors,
+        networkErrors,
+        errorRate: totalErrorRate,
+        timestamp
+      })
     }
-  }, [socketData, maxErrorRate])
 
-  const currentData = currentErrors || (data.length > 0 ? data[data.length - 1] : null)
+    return mock
+  }, [maxErrorRate])
+
+  useEffect(() => {
+    if (socketData && socketData.length > 0) {
+      const newPoint = socketData[0]
+      setHistory(prev => {
+        const last = prev[prev.length - 1]
+        if (!last || last.timestamp !== newPoint.timestamp) {
+          const updated = [...prev, newPoint].slice(-60)
+          // Deep equality check
+          if (JSON.stringify(prev) !== JSON.stringify(updated)) {
+            return updated
+          }
+        }
+        return prev
+      })
+    } else {
+      setHistory(prev => prev.length > 0 ? [] : prev)
+    }
+  }, [socketData])
+
+  const chartData = useMemo(() => history.length > 0 ? history : mockData, [history, mockData])
+  const currentData = currentErrors || (chartData.length > 0 ? chartData[chartData.length - 1] : null)
   const currentErrorRate = currentData ? currentData.errorRate : 0
 
   const isCritical = currentErrorRate >= 5 // 5%
   const isWarning = currentErrorRate >= 2 && !isCritical // 2%
   const isElevated = currentErrorRate >= 1 && !isWarning // 1%
 
-  const formatErrorRate = (value: number) => `${value.toFixed(2)}%`
-  const formatCount = (value: number) => value.toLocaleString()
+  const formatErrorRate = useCallback((value: number) => `${value.toFixed(2)}%`, [])
+  const formatCount = useCallback((value: number) => value.toLocaleString(), [])
 
   const ChartComponent = showBar ? BarChart : AreaChart
 
@@ -142,8 +142,8 @@ export function ChartErrorRate({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={height}>
-        <ChartComponent data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <ResponsiveContainer width="100%" height={height} debounce={1}>
+        <ChartComponent data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid
             strokeDasharray="3 3"
             stroke="#393c41"
@@ -207,10 +207,10 @@ export function ChartErrorRate({
           {showBar ? (
             // Bar chart for error counts
             <>
-              <Bar dataKey="error4xx" stackId="errors" fill="#f7c948" name="4xx Errors" />
-              <Bar dataKey="error5xx" stackId="errors" fill="#e31937" name="5xx Errors" />
-              <Bar dataKey="timeoutErrors" stackId="errors" fill="#8a8d91" name="Timeouts" />
-              <Bar dataKey="networkErrors" stackId="errors" fill="#3e6ae1" name="Network" />
+              <Bar dataKey="error4xx" stackId="errors" fill="#f7c948" name="4xx Errors" isAnimationActive={false} />
+              <Bar dataKey="error5xx" stackId="errors" fill="#e31937" name="5xx Errors" isAnimationActive={false} />
+              <Bar dataKey="timeoutErrors" stackId="errors" fill="#8a8d91" name="Timeouts" isAnimationActive={false} />
+              <Bar dataKey="networkErrors" stackId="errors" fill="#3e6ae1" name="Network" isAnimationActive={false} />
             </>
           ) : showStacked ? (
             // Stacked area chart for error rates
@@ -223,7 +223,7 @@ export function ChartErrorRate({
                 fill="#e31937"
                 fillOpacity={0.8}
                 name="Total Error Rate"
-                animationDuration={300}
+                isAnimationActive={false}
               />
             </>
           ) : (
@@ -231,11 +231,11 @@ export function ChartErrorRate({
             <Area
               type="monotone"
               dataKey="errorRate"
-              stroke="#FF0080"
-              fill="#FF0080"
+              stroke="#e31937"
+              fill="#e31937"
               fillOpacity={0.3}
               name="Error Rate"
-              animationDuration={300}
+              isAnimationActive={false}
             />
           )}
         </ChartComponent>

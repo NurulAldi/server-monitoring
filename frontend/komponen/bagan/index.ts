@@ -1,17 +1,5 @@
-// Export semua komponen chart untuk visualisasi data health server
+// Centralized exports for chart components (default exports aliased)
 
-export { ChartCPU } from './ChartCPU'
-export { ChartMemory } from './ChartMemory'
-export { ChartNetwork } from './ChartNetwork'
-export { ChartDisk } from './ChartDisk'
-export { ChartLoad } from './ChartLoad'
-export { ChartTemperature } from './ChartTemperature'
-export { ChartResponseTime } from './ChartResponseTime'
-export { ChartErrorRate } from './ChartErrorRate'
-export { ChartUptime } from './ChartUptime'
-export { ChartConnections } from './ChartConnections'
-
-// Export default untuk setiap komponen
 export { default as ChartCPU } from './ChartCPU'
 export { default as ChartMemory } from './ChartMemory'
 export { default as ChartNetwork } from './ChartNetwork'

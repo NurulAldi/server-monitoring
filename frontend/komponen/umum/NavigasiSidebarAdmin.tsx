@@ -65,7 +65,7 @@ export default function NavigasiSidebarAdmin() {
                 <Link
                   href={item.href}
                   className={cn(
-                    'flex items-center px-4 py-3 text-body font-medium rounded-pill transition-smooth',
+                    'flex items-center px-4 py-3 text-body font-medium rounded-pill transition-all duration-300 ease-in-out',
                     isActive
                       ? 'bg-accent-blue/10 text-accent-blue border-r-4 border-accent-blue'
                       : 'text-neutral-400 hover:bg-neutral-800 hover:text-high-contrast'
@@ -90,13 +90,13 @@ export default function NavigasiSidebarAdmin() {
         <div className="space-y-2">
           <Link
             href="/dashboard"
-            className="flex items-center w-full px-4 py-2.5 text-body font-medium text-neutral-400 rounded-pill hover:bg-neutral-800 hover:text-high-contrast transition-smooth"
+            className="flex items-center w-full px-4 py-2.5 text-body font-medium text-neutral-400 rounded-pill hover:bg-neutral-800 hover:text-high-contrast transition-all duration-300 ease-in-out"
           >
             Kembali ke Dashboard
           </Link>
           <button
             onClick={logout}
-            className="flex items-center w-full px-4 py-2.5 text-body font-medium text-neutral-400 rounded-pill hover:bg-neutral-800 hover:text-high-contrast transition-smooth"
+            className="flex items-center w-full px-4 py-2.5 text-body font-medium text-neutral-400 rounded-pill hover:bg-neutral-800 hover:text-high-contrast transition-all duration-300 ease-in-out"
           >
             <LogOut className="mr-3 h-5 w-5" />
             Keluar

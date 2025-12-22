@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   LineChart,
   Line,
@@ -41,28 +41,11 @@ export function ChartLoad({
 }: PropsChartLoad) {
   const { data: socketData, currentLoad, isOnline } = useLoadMetrics(serverId)
   const [data, setData] = useState<DataLoad[]>([])
+  const [history, setHistory] = useState<DataLoad[]>([])
 
-  useEffect(() => {
-    if (socketData && socketData.length > 0) {
-      // Transform socket data ke format chart
-      const transformedData: DataLoad[] = socketData.map(item => ({
-        waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        }),
-        load1: item.load1 || 0,
-        load5: item.load5 || 0,
-        load15: item.load15 || 0,
-        cpuCount: item.cpuCount || cpuCount,
-        loadPercent: item.loadPercent || 0,
-        timestamp: item.timestamp
-      }))
-      setData(transformedData)
-    } else {
-      // Fallback ke mock data jika socket offline
-      const mockData: DataLoad[] = []
-      const now = Date.now()
+  const mockData = useMemo(() => {
+    const mock: DataLoad[] = []
+    const now = Date.now()
 
       for (let i = 59; i >= 0; i--) {
         const timestamp = now - (i * 5000) // 5 detik intervals
@@ -74,7 +57,7 @@ export function ChartLoad({
         const load5 = load1 * 0.8 + Math.random() * 0.4 // Slightly lower and more stable
         const load15 = load5 * 0.9 + Math.random() * 0.2 // Most stable
 
-        mockData.push({
+        mock.push({
           waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
             hour: '2-digit',
             minute: '2-digit',
@@ -89,18 +72,37 @@ export function ChartLoad({
         })
       }
 
-      setData(mockData)
-    }
-  }, [socketData, cpuCount])
+    return mock
+  }, [cpuCount])
 
-  const currentData = currentLoad || (data.length > 0 ? data[data.length - 1] : null)
+  useEffect(() => {
+    if (socketData && socketData.length > 0) {
+      const newPoint = socketData[0]
+      setHistory(prev => {
+        const last = prev[prev.length - 1]
+        if (!last || last.timestamp !== newPoint.timestamp) {
+          const updated = [...prev, newPoint].slice(-60)
+          // Deep equality check
+          if (JSON.stringify(prev) !== JSON.stringify(updated)) {
+            return updated
+          }
+        }
+        return prev
+      })
+    } else {
+      setHistory(prev => prev.length > 0 ? [] : prev)
+    }
+  }, [socketData])
+
+  const chartData = useMemo(() => history.length > 0 ? history : mockData, [history, mockData])
+  const currentData = currentLoad || (chartData.length > 0 ? chartData[chartData.length - 1] : null)
   const currentLoadPercent = currentData ? currentData.loadPercent : 0
 
   const isCritical = currentLoadPercent >= 200 // 2x CPU count
   const isWarning = currentLoadPercent >= 150 && !isCritical
   const isHigh = currentLoadPercent >= 100 && !isWarning
 
-  const formatLoad = (value: number) => value.toFixed(2)
+  const formatLoad = useCallback((value: number) => value.toFixed(2), [])
 
   const ChartComponent = showArea ? AreaChart : LineChart
 
@@ -126,8 +128,8 @@ export function ChartLoad({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={height}>
-        <ChartComponent data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <ResponsiveContainer width="100%" height={height} debounce={1}>
+        <ChartComponent data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>  
           <CartesianGrid
             strokeDasharray="3 3"
             stroke="#393c41"
@@ -198,7 +200,7 @@ export function ChartLoad({
                 fill="#8a8d91"
                 fillOpacity={0.1}
                 name="15-min"
-                animationDuration={300}
+                isAnimationActive={false}
               />
               <Area
                 type="monotone"
@@ -208,7 +210,7 @@ export function ChartLoad({
                 fill="#3e6ae1"
                 fillOpacity={0.2}
                 name="5-min"
-                animationDuration={300}
+                isAnimationActive={false}
               />
               <Area
                 type="monotone"
@@ -218,7 +220,7 @@ export function ChartLoad({
                 fill="#00d448"
                 fillOpacity={0.3}
                 name="1-min"
-                animationDuration={300}
+                isAnimationActive={false}
               />
             </>
           ) : (
@@ -230,7 +232,7 @@ export function ChartLoad({
                 strokeWidth={3}
                 name="1-min"
                 dot={false}
-                animationDuration={300}
+                isAnimationActive={false}
               />
               <Line
                 type="monotone"
@@ -239,7 +241,7 @@ export function ChartLoad({
                 strokeWidth={2}
                 name="5-min"
                 dot={false}
-                animationDuration={300}
+                isAnimationActive={false}
               />
               <Line
                 type="monotone"
@@ -249,7 +251,7 @@ export function ChartLoad({
                 strokeDasharray="5 5"
                 name="15-min"
                 dot={false}
-                animationDuration={300}
+                isAnimationActive={false}
               />
             </>
           )}

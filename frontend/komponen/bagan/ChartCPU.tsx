@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   AreaChart,
   Area,
@@ -38,36 +38,49 @@ export function ChartCPU({
   const { data: socketData, currentUsage, isOnline } = useCPUMetrics(serverId)
   const [data, setData] = useState<DataCPU[]>([])
 
+  const mockData = useMemo(() => {
+    const mock: DataCPU[] = []
+    const now = Date.now()
+    for (let i = 59; i >= 0; i--) {
+      const timestamp = now - (i * 1000)
+      const baseValue = 20 + Math.random() * 40
+      const spike = Math.random() > 0.9 ? Math.random() * 30 : 0
+      mock.push({
+        waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }),
+        cpu: Math.min(100, baseValue + spike),
+        timestamp
+      })
+    }
+    return mock
+  }, [])
+
   useEffect(() => {
     if (socketData && socketData.length > 0 && showRealtime) {
       setData(prevData => {
-        const newData = [...prevData, ...socketData.map(item => ({
-          waktu: item.waktu,
-          cpu: item.usage,
-          timestamp: item.timestamp
-        }))]
-        return newData.slice(-60)
+        const newPoint = socketData[0]
+        const last = prevData[prevData.length - 1]
+        if (!last || last.timestamp !== newPoint.timestamp) {
+          const point = {
+            waktu: newPoint.waktu,
+            cpu: newPoint.usage,
+            timestamp: newPoint.timestamp
+          }
+          const updated = [...prevData, point].slice(-60)
+          // Deep equality check
+          if (JSON.stringify(prevData) !== JSON.stringify(updated)) {
+            return updated
+          }
+        }
+        return prevData
       })
-    } else if (!showRealtime) {
-      const mockData: DataCPU[] = []
-      const now = Date.now()
-      for (let i = 59; i >= 0; i--) {
-        const timestamp = now - (i * 1000)
-        const baseValue = 20 + Math.random() * 40
-        const spike = Math.random() > 0.9 ? Math.random() * 30 : 0
-        mockData.push({
-          waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          }),
-          cpu: Math.min(100, baseValue + spike),
-          timestamp
-        })
-      }
+    } else if (!showRealtime && data.length === 0) {
       setData(mockData)
     }
-  }, [socketData, showRealtime])
+  }, [socketData, showRealtime, mockData, data.length])
 
   const currentValue = currentUsage || (data.length > 0 ? data[data.length - 1].cpu : 0)
   const statusColor = getStatusColor(currentValue, warningThreshold, criticalThreshold)
@@ -81,8 +94,8 @@ export function ChartCPU({
       statusColor={statusColor}
       isLive={showRealtime && isOnline}
     >
-      <ResponsiveContainer width="100%" height={height}>
-        <AreaChart data={data}>
+      <ResponsiveContainer width="100%" height={height} debounce={1}>
+        <AreaChart data={data} animationDuration={0} isAnimationActive={false}>
           <defs>
             <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={statusColor} stopOpacity={0.3} />
@@ -119,7 +132,7 @@ export function ChartCPU({
             stroke={statusColor}
             strokeWidth={2}
             fill="url(#cpuGradient)"
-            animationDuration={300}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>

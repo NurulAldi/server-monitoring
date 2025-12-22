@@ -41,7 +41,7 @@ export function Navigation() {
     >
       <div className="max-w-7xl mx-auto px-8 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="text-heading-md font-bold text-high-contrast transition-smooth hover:text-soft-white">
+        <Link href="/" className="text-heading-md font-bold text-high-contrast transition-all duration-300 ease-in-out hover:text-soft-white">
           Server Monitor
         </Link>
 
@@ -52,7 +52,7 @@ export function Navigation() {
               key={link.href}
               href={link.href}
               className={cn(
-                'text-body font-medium transition-smooth',
+                'text-body font-medium transition-all duration-300 ease-in-out',
                 pathname === link.href
                   ? 'text-high-contrast'
                   : 'text-neutral-400 hover:text-high-contrast'

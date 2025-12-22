@@ -23,6 +23,11 @@ module.exports = {
         'accent-red': '#e31937',
         'success-green': '#00d448',
         'warning-amber': '#f7c948',
+        // Semantic status colors for utilities
+        'status-online': '#00d448',
+        'status-warning': '#f7c948',
+        'status-critical': '#e31937',
+        'status-offline': '#5c5e62',
       },
       fontFamily: {
         sans: ['Inter', 'Geist', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],

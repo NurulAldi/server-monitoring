@@ -133,7 +133,7 @@ export default function FormulirRegistrasi() {
           Sudah punya akun?{' '}
           <Link
             href="/autentikasi"
-            className="text-high-contrast hover:text-soft-white font-medium transition-smooth"
+            className="text-high-contrast hover:text-soft-white font-medium transition-all duration-300 ease-in-out"
           >
             Masuk
           </Link>

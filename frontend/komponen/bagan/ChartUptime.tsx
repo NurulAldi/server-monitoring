@@ -55,7 +55,15 @@ export function ChartUptime({
         mttr: item.mttr || 0,
         timestamp: item.timestamp
       }))
-      setData(transformedData)
+      
+      // Deep equality check
+      setData(prev => {
+        if (JSON.stringify(prev) !== JSON.stringify(transformedData)) {
+          return transformedData
+        }
+        return prev
+      })
+      
       setCurrentUptime(socketUptime?.uptime || transformedData[transformedData.length - 1]?.uptime || 0)
     } else {
       // Fallback ke mock data jika socket offline
@@ -241,7 +249,7 @@ export function ChartUptime({
               fill="#00d448"
               fillOpacity={0.3}
               name="uptime"
-              animationDuration={300}
+              isAnimationActive={false}
             />
           </AreaChart>
         ) : (
@@ -292,11 +300,11 @@ export function ChartUptime({
             <Line
               type="monotone"
               dataKey="uptime"
-              stroke="#00FF88"
+              stroke="#00d448"
               strokeWidth={2}
               name="Uptime"
               dot={false}
-              animationDuration={300}
+              isAnimationActive={false}
             />
           </LineChart>
         )}

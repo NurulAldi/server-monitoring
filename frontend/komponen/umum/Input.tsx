@@ -11,7 +11,7 @@ const Input = forwardRef<HTMLInputElement, PropsInput>(
       <input
         type={type}
         className={cn(
-          'w-full px-4 py-3 bg-deep-grey border rounded-lg text-high-contrast text-body placeholder:text-neutral-500 transition-smooth',
+          'w-full px-4 py-3 bg-deep-grey border rounded-lg text-high-contrast text-body placeholder:text-neutral-500 transition-all duration-300 ease-in-out',
           'focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-offset-2 focus:ring-offset-pure-black focus:border-accent-blue focus:bg-neutral-800',
           error
             ? 'border-accent-red focus:ring-accent-red'

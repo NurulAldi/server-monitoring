@@ -73,7 +73,7 @@ export default function FormulirMasuk() {
       <div className="flex items-center justify-end">
         <Link
           href="/autentikasi/lupa-kata-sandi"
-          className="text-body-sm text-neutral-400 hover:text-high-contrast transition-smooth"
+          className="text-body-sm text-neutral-400 hover:text-high-contrast transition-all duration-300 ease-in-out"
         >
           Lupa kata sandi?
         </Link>
@@ -94,7 +94,7 @@ export default function FormulirMasuk() {
           Belum punya akun?{' '}
           <Link
             href="/autentikasi/registrasi"
-            className="text-high-contrast hover:text-soft-white font-medium transition-smooth"
+            className="text-high-contrast hover:text-soft-white font-medium transition-all duration-300 ease-in-out"
           >
             Daftar sekarang
           </Link>

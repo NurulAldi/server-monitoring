@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, AlertTriangle, Info, Loader2 } from 'lucide-react'
-import { useSocket } from '../../soket/useSocket'
+import { useSocket } from '../../soket'
 import { useAISocket } from '../../soket/useAISocket'
 
 interface PesanChat {

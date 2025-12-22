@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useSocket } from './SocketProvider'
 
 // Hook untuk real-time metrics data
@@ -116,24 +116,47 @@ export function useMemoryMetrics(serverId?: string) {
 // Hook untuk network metrics
 export function useNetworkMetrics(serverId?: string) {
   const { currentMetrics } = useMetrics(serverId)
+  const [throttledData, setThrottledData] = useState<any[]>([])
+  const lastUpdateRef = useRef(0)
+  const lastTimestampRef = useRef(0)
 
-  const networkData = currentMetrics?.network ? [{
-    waktu: new Date(currentMetrics.timestamp).toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }),
-    upload: currentMetrics.network.upload || 0,
-    download: currentMetrics.network.download || 0,
-    total: (currentMetrics.network.upload || 0) + (currentMetrics.network.download || 0),
-    packetsIn: currentMetrics.network.packetsIn || 0,
-    packetsOut: currentMetrics.network.packetsOut || 0,
-    errors: currentMetrics.network.errors || 0,
-    timestamp: currentMetrics.timestamp
-  }] : []
+  // Point 5: Strict useMemo with primitive dependencies only
+  const timestamp = currentMetrics?.timestamp || 0
+  const hasNetwork = Boolean(currentMetrics?.network)
+  
+  const networkData = useMemo(() => {
+    if (!hasNetwork || !currentMetrics?.network) return []
+    
+    return [{
+      waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }),
+      upload: currentMetrics.network.upload || 0,
+      download: currentMetrics.network.download || 0,
+      total: (currentMetrics.network.upload || 0) + (currentMetrics.network.download || 0),
+      packetsIn: currentMetrics.network.packetsIn || 0,
+      packetsOut: currentMetrics.network.packetsOut || 0,
+      errors: currentMetrics.network.errors || 0,
+      timestamp
+    }]
+  }, [hasNetwork, timestamp]) // Primitive dependencies only
+
+  // Point 4: Effect audit - prevent infinite loop by checking timestamp change
+  useEffect(() => {
+    if (timestamp === lastTimestampRef.current) return // No change, skip update
+    
+    const now = Date.now()
+    if (now - lastUpdateRef.current > 1000) { // Throttle to 1 second
+      setThrottledData(networkData)
+      lastUpdateRef.current = now
+      lastTimestampRef.current = timestamp
+    }
+  }, [timestamp, networkData]) // Primitive dependency prevents loop
 
   return {
-    data: networkData,
+    data: throttledData,
     currentNetwork: currentMetrics?.network,
     isOnline: currentMetrics?.status === 'online'
   }

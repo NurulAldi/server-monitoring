@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   LineChart,
   Line,
@@ -39,70 +39,73 @@ export function ChartConnections({
   showRate = false
 }: PropsChartConnections) {
   const { data: socketData, currentConnections: socketConnections, isOnline } = useConnectionMetrics()
-  const [data, setData] = useState<DataConnections[]>([])
+  const [history, setHistory] = useState<DataConnections[]>([])
 
-  useEffect(() => {
-    if (socketData && socketData.length > 0) {
-      // Transform socket data ke format chart
-      const transformedData: DataConnections[] = socketData.map(item => ({
-        waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', {
+  const mockData = useMemo(() => {
+    const mock: DataConnections[] = []
+    const now = Date.now()
+
+    for (let i = 59; i >= 0; i--) {
+      const timestamp = now - (i * 1000) // 1 detik intervals
+      const timeOfDay = (timestamp % 86400000) / 3600000 // Hour of day
+
+      // Simulate daily pattern: peak during business hours
+      const baseLoad = timeOfDay >= 8 && timeOfDay <= 18 ?
+        400 + Math.sin((timeOfDay - 8) * Math.PI / 10) * 300 : // Business hours: 400-700
+        100 + Math.random() * 200 // Off hours: 100-300
+
+      const trend = (60 - i) * 2 // Gradual increase over time
+      const fluctuation = Math.sin(i * 0.1) * 50 // Sine wave fluctuation
+      const spike = Math.random() > 0.95 ? Math.random() * 200 : 0 // Occasional spikes
+
+      const activeConnections = Math.min(maxConnections, Math.max(0, Math.round(baseLoad + trend + fluctuation + spike)))
+
+      // Connection rates
+      const newConnections = Math.round((Math.random() * 20 + 5) * (activeConnections / maxConnections + 0.5))
+      const closedConnections = Math.round(newConnections * (0.8 + Math.random() * 0.4))
+      const connectionRate = Math.round((newConnections - closedConnections + Math.random() * 10 - 5) * 10) / 10
+
+      mock.push({
+        waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit'
         }),
-        activeConnections: item.activeConnections || 0,
-        maxConnections: item.maxConnections || maxConnections,
-        newConnections: item.newConnections || 0,
-        closedConnections: item.closedConnections || 0,
-        connectionRate: item.connectionRate || 0,
-        timestamp: item.timestamp
-      }))
-      setData(transformedData)
-    } else {
-      // Fallback ke mock data jika socket offline
-      const mockData: DataConnections[] = []
-      const now = Date.now()
-
-      for (let i = 59; i >= 0; i--) {
-        const timestamp = now - (i * 1000) // 1 detik intervals
-        const timeOfDay = (timestamp % 86400000) / 3600000 // Hour of day
-
-        // Simulate daily pattern: peak during business hours
-        const baseLoad = timeOfDay >= 8 && timeOfDay <= 18 ?
-          400 + Math.sin((timeOfDay - 8) * Math.PI / 10) * 300 : // Business hours: 400-700
-          100 + Math.random() * 200 // Off hours: 100-300
-
-        const trend = (60 - i) * 2 // Gradual increase over time
-        const fluctuation = Math.sin(i * 0.1) * 50 // Sine wave fluctuation
-        const spike = Math.random() > 0.95 ? Math.random() * 200 : 0 // Occasional spikes
-
-        const activeConnections = Math.min(maxConnections, Math.max(0, Math.round(baseLoad + trend + fluctuation + spike)))
-
-        // Connection rates
-        const newConnections = Math.round((Math.random() * 20 + 5) * (activeConnections / maxConnections + 0.5))
-        const closedConnections = Math.round(newConnections * (0.8 + Math.random() * 0.4))
-        const connectionRate = Math.round((newConnections - closedConnections + Math.random() * 10 - 5) * 10) / 10
-
-        mockData.push({
-          waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          }),
-          activeConnections,
-          maxConnections,
-          newConnections,
-          closedConnections,
-          connectionRate,
-          timestamp
-        })
-      }
-
-      setData(mockData)
+        activeConnections,
+        maxConnections,
+        newConnections,
+        closedConnections,
+        connectionRate,
+        timestamp
+      })
     }
-  }, [socketData, maxConnections])
 
-  const currentData = socketConnections || (data.length > 0 ? data[data.length - 1] : null)
+    return mock
+  }, [maxConnections])
+
+  useEffect(() => {
+    if (socketData && socketData.length > 0) {
+      const newPoint = socketData[0]
+      setHistory(prev => {
+        const last = prev[prev.length - 1]
+        // Only add if timestamp is different AND data is different
+        if (!last || last.timestamp !== newPoint.timestamp) {
+          const updated = [...prev, newPoint].slice(-60)
+          // Deep equality check
+          if (JSON.stringify(prev) !== JSON.stringify(updated)) {
+            return updated
+          }
+        }
+        return prev
+      })
+    } else {
+      setHistory(prev => prev.length > 0 ? [] : prev)
+    }
+  }, [socketData])
+
+  const chartData = useMemo(() => history.length > 0 ? history : mockData, [history, mockData])
+
+  const currentData = socketConnections || (chartData.length > 0 ? chartData[chartData.length - 1] : null)
   const currentConnections = currentData ? currentData.activeConnections : 0
   const utilizationPercent = (currentConnections / maxConnections) * 100
 
@@ -110,8 +113,8 @@ export function ChartConnections({
   const isWarning = utilizationPercent >= 80 && !isCritical
   const isHigh = utilizationPercent >= 60 && !isWarning
 
-  const formatConnections = (value: number) => value.toLocaleString()
-  const formatRate = (value: number) => `${value > 0 ? '+' : ''}${value}/s`
+  const formatConnections = useCallback((value: number) => value.toLocaleString(), [])
+  const formatRate = useCallback((value: number) => `${value > 0 ? '+' : ''}${value}/s`, [])
 
   const ChartComponent = showArea ? AreaChart : LineChart
 
@@ -165,8 +168,8 @@ export function ChartConnections({
       </div>
 
       {/* Connections chart */}
-      <ResponsiveContainer width="100%" height={height}>
-        <ChartComponent data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <ResponsiveContainer width="100%" height={height} debounce={1}>
+          <ChartComponent data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} isAnimationActive={false}>
           <CartesianGrid
             strokeDasharray="3 3"
             stroke="#393c41"
@@ -235,7 +238,7 @@ export function ChartConnections({
               fill="#00d448"
               fillOpacity={0.3}
               name="activeConnections"
-              animationDuration={300}
+              isAnimationActive={false}
             />
           ) : (
             <Line
@@ -245,7 +248,7 @@ export function ChartConnections({
               strokeWidth={3}
               name="Active Connections"
               dot={false}
-              animationDuration={300}
+              isAnimationActive={false}
             />
           )}
 
@@ -260,7 +263,7 @@ export function ChartConnections({
                 strokeDasharray="5 5"
                 name="New Connections"
                 dot={false}
-                animationDuration={300}
+                isAnimationActive={false}
               />
               <Line
                 type="monotone"
@@ -270,7 +273,7 @@ export function ChartConnections({
                 strokeDasharray="5 5"
                 name="Closed Connections"
                 dot={false}
-                animationDuration={300}
+                isAnimationActive={false}
               />
             </>
           )}

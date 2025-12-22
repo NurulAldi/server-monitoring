@@ -2,7 +2,7 @@
 
 /* ===== CARDS ===== */
 .card {
-  @apply bg-deep-grey border border-neutral-700 rounded-xl transition-smooth;
+  @apply bg-deep-grey border border-neutral-700 rounded-xl transition-all duration-300 ease-in-out;
 }
 
 .card:hover {
@@ -63,7 +63,7 @@
 
 /* ===== INPUTS & FORMS ===== */
 .input {
-  @apply w-full px-4 py-3.5 bg-deep-grey border border-neutral-700 rounded-lg text-high-contrast text-base leading-6 transition-smooth;
+  @apply w-full px-4 py-3.5 bg-deep-grey border border-neutral-700 rounded-lg text-high-contrast text-base leading-6 transition-all duration-300 ease-in-out;
 }
 
 .input:focus {
@@ -127,7 +127,7 @@
 
 /* ===== METRICS DISPLAY ===== */
 .metric-card {
-  @apply bg-deep-grey border border-neutral-700 rounded-2xl p-6 text-center transition-smooth;
+  @apply bg-deep-grey border border-neutral-700 rounded-2xl p-6 text-center transition-all duration-300 ease-in-out;
 }
 
 .metric-card:hover {
@@ -149,7 +149,7 @@
 }
 
 .progress-fill {
-  @apply h-full bg-gradient-to-r from-accent-blue to-high-contrast rounded-lg transition-smooth;
+  @apply h-full bg-gradient-to-r from-accent-blue to-high-contrast rounded-lg transition-all duration-300 ease-in-out;
   box-shadow: 0 0 12px rgba(62, 106, 225, 0.4);
 }
 
@@ -192,7 +192,7 @@
 
 /* ===== NAVIGATION ===== */
 .nav-item {
-  @apply flex items-center px-4 py-3 rounded-lg text-neutral-400 no-underline transition-smooth mb-1;
+  @apply flex items-center px-4 py-3 rounded-lg text-neutral-400 no-underline transition-all duration-300 ease-in-out mb-1;
 }
 
 .nav-item:hover {
@@ -271,10 +271,5 @@
   }
   to {
     text-shadow: 0 0 20px rgba(62, 106, 225, 0.8);
-  }
-}
-  to {
-    transform: translateY(0);
-    opacity: 1;
   }
 }

@@ -14,7 +14,7 @@ export function Card({ children, className, hover = true, glass = false }: CardP
   return (
     <div
       className={cn(
-        'rounded-xl p-8 transition-smooth',
+        'rounded-xl p-8 transition-all duration-300 ease-in-out',
         glass ? 'glass' : 'bg-deep-grey border border-neutral-700',
         hover && 'hover:-translate-y-1 hover:border-neutral-600',
         className

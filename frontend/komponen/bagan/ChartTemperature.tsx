@@ -61,7 +61,14 @@ export function ChartTemperature({
         maxTemp: item.maxTemp || maxTemp,
         timestamp: item.timestamp
       }))
-      setData(transformedData)
+      
+      // Deep equality check
+      setData(prev => {
+        if (JSON.stringify(prev) !== JSON.stringify(transformedData)) {
+          return transformedData
+        }
+        return prev
+      })
     } else {
       // Fallback ke mock data jika socket offline
       const mockData: DataTemperature[] = []
@@ -197,7 +204,7 @@ export function ChartTemperature({
               fill="#8a8d91"
               fillOpacity={0.1}
               name="Ambient"
-              animationDuration={300}
+              isAnimationActive={false}
             />
           )}
 
@@ -209,7 +216,7 @@ export function ChartTemperature({
             fill="#3e6ae1"
             fillOpacity={0.2}
             name="Disk"
-            animationDuration={300}
+            isAnimationActive={false}
           />
 
           <Area
@@ -219,7 +226,7 @@ export function ChartTemperature({
             fill="#f7c948"
             fillOpacity={0.3}
             name="Motherboard"
-            animationDuration={300}
+            isAnimationActive={false}
           />
 
           {showGPU && currentData?.gpu && (
@@ -231,7 +238,7 @@ export function ChartTemperature({
               fill="#e31937"
               fillOpacity={0.4}
               name="GPU"
-              animationDuration={300}
+              isAnimationActive={false}
             />
           )}
 
@@ -243,7 +250,7 @@ export function ChartTemperature({
             fill="#00d448"
             fillOpacity={0.5}
             name="CPU"
-            animationDuration={300}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>

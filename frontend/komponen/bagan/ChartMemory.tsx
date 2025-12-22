@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useMemoryMetrics } from '@/soket/useMetrics'
 import {
   PieChart,
@@ -56,17 +56,26 @@ export function ChartMemory({
     if (socketData && socketData.length > 0 && showRealtime) {
       // Use real-time data from socket
       setData(prevData => {
-        const newData = [...prevData, ...socketData.map(item => ({
-          waktu: item.waktu,
-          used: item.used,
-          free: item.available,
-          cached: Math.round(item.used * 0.2), // Estimate cached (20% of used)
-          buffers: Math.round(item.used * 0.05), // Estimate buffers (5% of used)
-          total: item.total,
-          timestamp: item.timestamp
-        }))]
-        // Keep only last 30 data points for performance
-        return newData.slice(-30)
+        const newPoint = socketData[0]
+        const last = prevData[prevData.length - 1]
+        // Only add if timestamp is different
+        if (!last || last.timestamp !== newPoint.timestamp) {
+          const transformedPoint = {
+            waktu: newPoint.waktu,
+            used: newPoint.used,
+            free: newPoint.available,
+            cached: Math.round(newPoint.used * 0.2),
+            buffers: Math.round(newPoint.used * 0.05),
+            total: newPoint.total,
+            timestamp: newPoint.timestamp
+          }
+          const updated = [...prevData, transformedPoint].slice(-30)
+          // Deep equality check
+          if (JSON.stringify(prevData) !== JSON.stringify(updated)) {
+            return updated
+          }
+        }
+        return prevData
       })
       if (socketData.length > 0) {
         const lastItem = socketData[socketData.length - 1]
@@ -164,7 +173,7 @@ export function ChartMemory({
             outerRadius={90}
             paddingAngle={2}
             dataKey="value"
-            animationDuration={500}
+            isAnimationActive={false}
           >
             {getDonutData().map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -201,9 +210,9 @@ export function ChartMemory({
     </div>
   )
 
-  const renderAreaChart = () => (
-    <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+  const renderAreaChart = useCallback(() => (
+    <ResponsiveContainer width="100%" height={height} debounce={1}>
+      <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }} isAnimationActive={false}>
         <defs>
           <linearGradient id="usedGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={MEMORY_COLORS.used} stopOpacity={0.3}/>
@@ -250,6 +259,7 @@ export function ChartMemory({
           stroke={MEMORY_COLORS.used}
           fill="url(#usedGradient)"
           name="Used"
+          isAnimationActive={false}
         />
         <Area
           type="monotone"
@@ -258,6 +268,7 @@ export function ChartMemory({
           stroke={MEMORY_COLORS.cached}
           fill="url(#cachedGradient)"
           name="Cached"
+          isAnimationActive={false}
         />
         <Area
           type="monotone"
@@ -266,10 +277,11 @@ export function ChartMemory({
           stroke={MEMORY_COLORS.buffers}
           fill="url(#buffersGradient)"
           name="Buffers"
+          isAnimationActive={false}
         />
       </AreaChart>
     </ResponsiveContainer>
-  )
+  ), [data, height])
 
   return (
     <div className="w-full">
