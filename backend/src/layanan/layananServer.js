@@ -2,7 +2,7 @@
 // Business logic untuk CRUD server dan monitoring
 
 const Server = require('../model/Server');
-const { logger } = require('../utilitas/logger');
+const { logger, logServerStatusChange } = require('../utilitas/logger');
 const { ERROR_CODE } = require('../utilitas/konstanta');
 
 // Tambah server baru
@@ -326,6 +326,10 @@ async function pingServer(userId, serverId) {
 // Update status server (dipanggil oleh monitoring service)
 async function updateStatusServer(serverId, status, metrikTerbaru = null) {
   try {
+    // Get current server status before update
+    const currentServer = await Server.findById(serverId).select('nama status metrikTerbaru');
+    const oldStatus = currentServer?.status || 'unknown';
+
     const updateData = {
       status: status,
       diperbaruiPada: new Date()
@@ -343,6 +347,19 @@ async function updateStatusServer(serverId, status, metrikTerbaru = null) {
 
     if (!server) {
       throw new Error('Server tidak ditemukan');
+    }
+
+    // Log status change if status actually changed
+    if (oldStatus !== status) {
+      logServerStatusChange(serverId, {
+        serverName: server.nama,
+        oldStatus: oldStatus,
+        newStatus: status,
+        changeReason: 'monitoring_update',
+        userId: 'system',
+        metrics: metrikTerbaru || server.metrikTerbaru || {},
+        downtime: oldStatus === 'online' && status !== 'online' ? Date.now() - (server.terakhirOnline?.getTime() || Date.now()) : 0
+      });
     }
 
     return server;

@@ -599,58 +599,6 @@ const validasiResolveAlert = [
   body('catatan').optional().isLength({ max: 1000 }).withMessage('Catatan maksimal 1000 karakter')
 ];
 
-module.exports = {
-  dapatkanKondisiAlert,
-  buatKondisiAlert,
-  updateKondisiAlert,
-  hapusKondisiAlert,
-  dapatkanAlertAktif,
-  acknowledgeAlert,
-  resolveAlert,
-  evaluasiAlertManual,
-  dapatkanStatistikAlert,
-  validasiBuatKondisiAlert,
-  validasiUpdateKondisiAlert,
-  validasiHapusKondisiAlert,
-  validasiAcknowledgeAlert,
-  validasiResolveAlert
-};
-      { severity, serverId },
-      halamanInt,
-      limitInt
-    );
-
-    // Log berhasil
-    logger.logUserActivity(userId, 'ALERT_ACTIVE_SUCCESS', {
-      alertsCount: hasilAlert.data.length,
-      totalPages: hasilAlert.pagination.totalHalaman,
-      ip: req.ip
-    });
-
-    // Response sukses
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      message: 'Alert aktif berhasil didapatkan',
-      data: hasilAlert.data,
-      pagination: hasilAlert.pagination
-    });
-
-  } catch (error) {
-    // Log error
-    logger.logError('ALERT_ACTIVE_ERROR', error, {
-      userId: req.user.id,
-      filters: req.query,
-      ip: req.ip
-    });
-
-    // Response error
-    res.status(error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: error.message || 'Terjadi kesalahan saat mengambil alert aktif',
-      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-}
 
 /**
  * DESKRIPSI: Handle request untuk acknowledge alert
@@ -1072,25 +1020,6 @@ const validasiDapatkanAlertAktif = [
     .withMessage('Limit harus antara 5-100'),
 ];
 
-const validasiAcknowledgeAlert = [
-  param('idAlert')
-    .isMongoId()
-    .withMessage('ID alert tidak valid'),
-  body('catatan')
-    .optional()
-    .isLength({ max: 500 })
-    .withMessage('Catatan maksimal 500 karakter'),
-];
-
-const validasiResolveAlert = [
-  param('idAlert')
-    .isMongoId()
-    .withMessage('ID alert tidak valid'),
-  body('catatan')
-    .optional()
-    .isLength({ max: 1000 })
-    .withMessage('Catatan resolusi maksimal 1000 karakter'),
-];
 
 const validasiAssignAlert = [
   param('idAlert')
@@ -1116,13 +1045,26 @@ const validasiDapatkanStatistikAlert = [
 
 // Export semua fungsi dan validasi
 module.exports = {
+  // Kondisi alert
+  dapatkanKondisiAlert,
+  buatKondisiAlert,
+  updateKondisiAlert,
+  hapusKondisiAlert,
+  validasiBuatKondisiAlert,
+  validasiUpdateKondisiAlert,
+  validasiHapusKondisiAlert,
+
+  // Alert instances
   dapatkanAlertAktif,
   acknowledgeAlert,
   resolveAlert,
   assignAlert,
+  evaluasiAlertManual,
   dapatkanDetailAlert,
   dapatkanStatistikAlert,
   dapatkanAlertPerluEscalation,
+
+  // Validations for alert instances
   validasiDapatkanAlertAktif,
   validasiAcknowledgeAlert,
   validasiResolveAlert,

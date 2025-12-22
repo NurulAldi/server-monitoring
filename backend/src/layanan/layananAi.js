@@ -4,7 +4,16 @@
 const { logger } = require('../utilitas/logger');
 const Metrik = require('../model/Metrik');
 const Server = require('../model/Server');
-const { OpenAI } = require('openai');
+let OpenAI;
+let openai = null;
+try {
+  // Lazily require the OpenAI SDK only if installed
+  OpenAI = require('openai').OpenAI;
+} catch (err) {
+  OpenAI = null;
+  // Do not crash here; log warning and proceed (other providers may be used)
+  // Note: logger may not be defined yet; require it after
+}
 
 // Import shared AI service untuk konsistensi
 const {
@@ -13,10 +22,17 @@ const {
   validateResponse
 } = require('./sharedAIService');
 
-// Inisialisasi OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client if available and API key present
+if (OpenAI && process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+} else if (!OpenAI && process.env.OPENAI_API_KEY) {
+  // If API key is present but SDK missing, warn
+  const { logger: _logger } = require('../utilitas/logger');
+  _logger.warn('OpenAI SDK not installed but OPENAI_API_KEY is set. Install the openai package to use OpenAI provider.');
+} else if (OpenAI && !process.env.OPENAI_API_KEY) {
+  const { logger: _logger } = require('../utilitas/logger');
+  _logger.info('OpenAI SDK available but OPENAI_API_KEY is not set.');
+}
 
 /**
  * DESKRIPSI: Generate rekomendasi AI berdasarkan kondisi server

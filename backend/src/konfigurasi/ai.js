@@ -351,6 +351,29 @@ async function generateResponseAi(pesanInput, opsi = {}) {
   }
 }
 
+/**
+ * DESKRIPSI: Test koneksi ke provider AI
+ * TUJUAN: Memverifikasi apakah API key dan endpoint AI berfungsi
+ * RETURN: { success: boolean, model?: string, message?: string }
+ */
+async function testKoneksiAI() {
+  try {
+    // Gunakan requestAI dengan prompt singkat untuk verifikasi
+    const respons = await requestAI('Tes koneksi: balas dengan kata OK', 'CHAT_INTERAKTIF', { maxTokens: 5 });
+    return {
+      success: true,
+      model: respons.model,
+      message: respons.content
+    };
+  } catch (error) {
+    console.error('❌ testKoneksiAI failed:', error.message);
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+}
+
 // Export semua fungsi dan konstanta
 module.exports = {
   requestAI,

@@ -68,7 +68,7 @@ npm run dev
 npm start
 ```
 
-Server akan berjalan di `http://localhost:5000` (atau port yang diset di `.env`).
+Server akan berjalan di `http://localhost:5001` (atau port yang diset di `.env`).
 
 ## API Endpoints
 
@@ -367,7 +367,7 @@ Test koneksi email:
 
 ```bash
 # Via API
-curl -X GET http://localhost:5000/api/konfigurasi/test-email
+curl -X GET http://localhost:5001/api/konfigurasi/test-email
 
 # Via code
 const { testKoneksiEmail } = require('./src/konfigurasi/email');

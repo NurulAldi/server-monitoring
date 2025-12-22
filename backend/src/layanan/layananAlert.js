@@ -1,7 +1,7 @@
 // Layanan Alert untuk Sistem Monitoring Server
 // Evaluasi kondisi alert kesehatan server berdasarkan threshold dan anti-spam mechanisms
 
-const { logger } = require('../utilitas/logger');
+const { logger, logEmailAlert } = require('../utilitas/logger');
 const layananEmail = require('./layananEmail');
 const Server = require('../model/Server');
 const Metrik = require('../model/Metrik');
@@ -726,7 +726,19 @@ async function kirimEmailDenganAnalisis(alert, kondisi) {
     };
 
     // Kirim email
-    await layananEmail.kirimEmail(emailData);
+    const emailResult = await layananEmail.kirimEmail(emailData);
+
+    // Log successful email alert
+    logEmailAlert(alert._id.toString(), {
+      alertType: kondisi.level || 'unknown',
+      recipients: [emailData.to],
+      emailTemplate: 'ai_analysis_template',
+      deliveryStatus: 'sent',
+      smtpResponse: emailResult?.messageId || 'OK',
+      retryCount: 0,
+      emailSize: emailData.html?.length || 0,
+      subject: subjekEmail
+    });
 
     // Log successful email sending
     await aiLoggingService.addUserInteraction(
@@ -743,6 +755,18 @@ async function kirimEmailDenganAnalisis(alert, kondisi) {
     logger.debug(`Email alert dengan AI analysis dikirim untuk ${alert._id}`);
 
   } catch (error) {
+    // Log failed email alert
+    logEmailAlert(alert._id.toString(), {
+      alertType: kondisi.level || 'unknown',
+      recipients: [kondisi.notifikasi?.email?.penerima || 'admin@company.com'],
+      emailTemplate: 'ai_analysis_template',
+      deliveryStatus: 'failed',
+      retryCount: 0,
+      emailSize: 0,
+      subject: `🚨 ALERT: ${alert.judul}`,
+      error: error.message
+    });
+
     // Log error jika ada logId
     if (logId && sessionId) {
       try {
@@ -1544,100 +1568,6 @@ module.exports = {
   mapParameterToJenisAlert
 };
 
-    // Prepare real-time alert data
-    const realtimeAlertData = {
-      alertId: alert._id.toString(),
-      serverId: serverId.toString(),
-      namaServer: server?.nama || 'Unknown Server',
-      host: server?.host || 'Unknown Host',
-      tipe,
-      severity,
-      pesan,
-      detail,
-      timestamp: alert.createdAt.toISOString(),
-      status: 'active'
-    };
-
-    // Emit to Socket.IO if available
-    if (io) {
-      const alertNamespace = io.of('/alert');
-
-      // Emit based on severity
-      if (severity === 'critical') {
-        alertNamespace.to('alerts_critical').emit('alert:baru', realtimeAlertData);
-      } else if (severity === 'high') {
-        alertNamespace.to('alerts_high').emit('alert:baru', realtimeAlertData);
-        alertNamespace.to('alerts_critical').emit('alert:baru', realtimeAlertData);
-      } else if (severity === 'medium') {
-        alertNamespace.to('alerts_medium').emit('alert:baru', realtimeAlertData);
-      } else {
-        alertNamespace.to('alerts_low').emit('alert:baru', realtimeAlertData);
-      }
-
-      // Emit to server-specific room
-      alertNamespace.to(`server_alerts_${serverId}`).emit('alert:server_baru', realtimeAlertData);
-
-      // Emit to system namespace for general notifications
-      const systemNamespace = io.of('/sistem');
-      systemNamespace.to('system_general').emit('sistem:alert_baru', {
-        ...realtimeAlertData,
-        kategori: 'alert',
-        prioritas: severity === 'critical' ? 'tinggi' : severity === 'high' ? 'sedang' : 'rendah'
-      });
-
-      logger.debug(`Alert emitted via Socket.IO: ${alert._id} (${severity})`);
-    }
-
-    // Send email notification based on user preferences and alert severity
-    try {
-      if (server?.pemilik) {
-        const user = await Pengguna.findById(server.pemilik);
-        if (user && user.pengaturanEmail) {
-          const emailSettings = user.pengaturanEmail;
-
-          // Check if user wants email for this severity level
-          let shouldSendEmail = false;
-          if (severity === 'critical' && emailSettings.alertKritis) {
-            shouldSendEmail = true;
-          } else if (severity === 'high' && emailSettings.alertTinggi) {
-            shouldSendEmail = true;
-          } else if (severity === 'medium' && emailSettings.alertSedang) {
-            shouldSendEmail = true;
-          } else if (severity === 'low' && emailSettings.alertRendah) {
-            shouldSendEmail = true;
-          }
-
-          if (shouldSendEmail) {
-            await kirimAlertServer(serverId, {
-              ...detail,
-              alertId: alert._id,
-              severity,
-              tipe
-            });
-
-            logger.debug(`Email alert sent untuk ${alert._id} ke user ${user._id}`);
-          }
-        }
-      }
-    } catch (emailError) {
-      logger.logError('ALERT_EMAIL_FAILED', emailError, { alertId: alert._id });
-    }
-
-    logger.logSystemActivity('ALERT_CREATED', {
-      alertId: alert._id,
-      serverId,
-      type: tipe,
-      severity,
-      message: pesan
-    });
-
-    return alert;
-
-  } catch (error) {
-    logger.logError('ALERT_CREATION_FAILED', error, alertData);
-    throw error;
-  }
-}
 
 /**
  * DESKRIPSI: Evaluasi kondisi kesehatan server

@@ -20,11 +20,19 @@ const limiterLogin = rateLimit({
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   // Handler untuk log ketika rate limit tercapai
-  onLimitReached: (req, res) => {
+  handler: (req, res) => {
     logger.logUserActivity('anonymous', 'RATE_LIMIT_EXCEEDED', {
       ip: req.ip,
       endpoint: req.url,
       userAgent: req.get('User-Agent')
+    });
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Terlalu banyak percobaan login. Silakan tunggu 15 menit sebelum mencoba lagi.',
+        retryAfter: 15 * 60
+      }
     });
   },
   // Skip rate limiting untuk admin (opsional)
@@ -49,11 +57,19 @@ const limiterApi = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  onLimitReached: (req, res) => {
+  handler: (req, res) => {
     logger.logUserActivity(req.user?.id || 'anonymous', 'API_RATE_LIMIT_EXCEEDED', {
       ip: req.ip,
       endpoint: req.url,
       userAgent: req.get('User-Agent')
+    });
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Terlalu banyak request API. Silakan tunggu beberapa saat.',
+        retryAfter: 15 * 60
+      }
     });
   }
 });
@@ -72,11 +88,19 @@ const limiterChat = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  onLimitReached: (req, res) => {
+  handler: (req, res) => {
     logger.logUserActivity(req.user?.id || 'anonymous', 'CHAT_RATE_LIMIT_EXCEEDED', {
       ip: req.ip,
       endpoint: req.url,
       userAgent: req.get('User-Agent')
+    });
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Terlalu banyak request chat. Silakan tunggu 1 jam sebelum mencoba lagi.',
+        retryAfter: 60 * 60
+      }
     });
   }
 });
@@ -95,11 +119,19 @@ const limiterEmail = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  onLimitReached: (req, res) => {
+  handler: (req, res) => {
     logger.logUserActivity(req.user?.id || 'anonymous', 'EMAIL_RATE_LIMIT_EXCEEDED', {
       ip: req.ip,
       endpoint: req.url,
       userAgent: req.get('User-Agent')
+    });
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Terlalu banyak request email. Silakan tunggu 1 jam.',
+        retryAfter: 60 * 60
+      }
     });
   }
 });
@@ -118,11 +150,19 @@ const limiterRegistrasi = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  onLimitReached: (req, res) => {
+  handler: (req, res) => {
     logger.logUserActivity('anonymous', 'REGISTRATION_RATE_LIMIT_EXCEEDED', {
       ip: req.ip,
       endpoint: req.url,
       userAgent: req.get('User-Agent')
+    });
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Terlalu banyak registrasi. Silakan tunggu 1 jam.',
+        retryAfter: 60 * 60
+      }
     });
   }
 });
@@ -141,11 +181,19 @@ const limiterDashboard = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  onLimitReached: (req, res) => {
+  handler: (req, res) => {
     logger.logUserActivity(req.user?.id || 'anonymous', 'DASHBOARD_RATE_LIMIT_EXCEEDED', {
       ip: req.ip,
       endpoint: req.url,
       userAgent: req.get('User-Agent')
+    });
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Terlalu banyak request dashboard. Silakan tunggu 1 menit.',
+        retryAfter: 60
+      }
     });
   }
 });
@@ -180,12 +228,20 @@ function createCustomLimiter(options) {
     },
     standardHeaders: true,
     legacyHeaders: false,
-    onLimitReached: options.onLimitReached || ((req, res) => {
+    handler: options.handler || ((req, res) => {
       logger.logUserActivity(req.user?.id || 'anonymous', 'CUSTOM_RATE_LIMIT_EXCEEDED', {
         ip: req.ip,
         endpoint: req.url,
         windowMs: options.windowMs,
         max: options.max
+      });
+      res.status(429).json({
+        success: false,
+        error: {
+          code: 'TOO_MANY_REQUESTS',
+          message: options.message || 'Terlalu banyak request.',
+          retryAfter: Math.ceil((options.windowMs || 15 * 60 * 1000) / 1000)
+        }
       });
     })
   });
@@ -193,14 +249,19 @@ function createCustomLimiter(options) {
 
 // Export semua rate limiters
 module.exports = {
+  // Named limiters
   limiterLogin,
   limiterApi,
-  limiterAI,
+
   limiterChat,
   limiterEmail,
   limiterRegistrasi,
   limiterDashboard,
   limiterAdmin,
   createCustomLimiter,
-  createConditionalLimiter
+  createConditionalLimiter,
+
+  // Backwards-compatible aliases expected by route modules
+  apiLimiter: limiterApi,
+  limiterGeneral: limiterApi
 };

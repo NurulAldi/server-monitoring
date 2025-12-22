@@ -1,6 +1,9 @@
 // Server utama Express.js untuk aplikasi monitoring health server
 // Setup aplikasi Express dengan semua middleware, routes, dan konfigurasi
 
+// Load environment variables early
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -11,11 +14,11 @@ const cookieParser = require('cookie-parser');
 
 // Import konfigurasi dan utilitas
 const { connectDatabase } = require('./konfigurasi/database');
-const { logger } = require('./utilitas/logger');
+const { logger, logError, logSystemActivity } = require('./utilitas/logger');
 const { HTTP_STATUS, ERROR_CODE } = require('./utilitas/konstanta');
 
 // Import middleware
-const errorHandler = require('./middleware/errorHandler');
+const { errorHandler } = require('./middleware/errorHandler');
 const rateLimiter = require('./middleware/rateLimiter');
 
 // Import routes
@@ -91,7 +94,7 @@ app.use((req, res, next) => {
   const start = Date.now();
 
   // Log request masuk
-  logger.logSystemActivity('REQUEST_IN', {
+  logSystemActivity('REQUEST_IN', {
     method: req.method,
     url: req.url,
     ip: req.ip,
@@ -102,7 +105,7 @@ app.use((req, res, next) => {
   // Log response keluar
   res.on('finish', () => {
     const duration = Date.now() - start;
-    logger.logSystemActivity('REQUEST_OUT', {
+    logSystemActivity('REQUEST_OUT', {
       method: req.method,
       url: req.url,
       status: res.statusCode,
@@ -127,20 +130,31 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-app.use('/', ruteUtama); // Rute utama untuk health check dan status
-app.use('/api/pengguna', rutePengguna);
-app.use('/api/server', ruteServer);
-app.use('/api/metrik', ruteMetrik);
-app.use('/api/alert', ruteAlert);
-app.use('/api/chat', ruteChat);
-app.use('/api/konfigurasi', ruteKonfigurasi);
-app.use('/api/agregasi', ruteAgregasi);
-app.use('/api/status-server', ruteStatusServer);
-app.use('/api/ai-analytics', ruteAILogging);
+function useRoute(path, routeModule) {
+  // Accept Express Router functions or objects with a 'stack' (Router) or 'use' (router-like)
+  const isRouterLike = (routeModule && (typeof routeModule === 'function' || Array.isArray(routeModule.stack) || typeof routeModule.use === 'function'));
+  if (!isRouterLike) {
+    // Use logError helper to record invalid route module
+    logger.logError(new Error('INVALID_ROUTE_MODULE'), { path, type: typeof routeModule, keys: routeModule ? Object.keys(routeModule) : null });
+    throw new TypeError(`Route for path ${path} is not a valid router/middleware. Received type: ${typeof routeModule}`);
+  }
+  app.use(path, routeModule);
+}
+
+useRoute('/', ruteUtama); // Rute utama untuk health check dan status
+useRoute('/api/pengguna', rutePengguna);
+useRoute('/api/server', ruteServer);
+useRoute('/api/metrik', ruteMetrik);
+useRoute('/api/alert', ruteAlert);
+useRoute('/api/chat', ruteChat);
+useRoute('/api/konfigurasi', ruteKonfigurasi);
+useRoute('/api/agregasi', ruteAgregasi);
+useRoute('/api/status-server', ruteStatusServer);
+useRoute('/api/ai-analytics', ruteAILogging);
 
 // 404 handler untuk route yang tidak ditemukan
 app.use('*', (req, res) => {
-  logger.logSystemActivity('ROUTE_NOT_FOUND', {
+  logSystemActivity('ROUTE_NOT_FOUND', {
     method: req.method,
     url: req.url,
     ip: req.ip
@@ -183,40 +197,147 @@ async function startServer() {
     // Setup kondisi alert default
     try {
       const kondisiDefault = await layananAlert.buatKondisiAlertDefault();
-      logger.logSystemActivity('DEFAULT_ALERT_CONDITIONS_SETUP', {
+      logSystemActivity('DEFAULT_ALERT_CONDITIONS_SETUP', {
         conditionsCreated: kondisiDefault.length,
         status: 'success'
       });
     } catch (error) {
-      logger.logSystemError('DEFAULT_ALERT_CONDITIONS_SETUP_FAILED', error);
+      logError(error, { code: 'DEFAULT_ALERT_CONDITIONS_SETUP_FAILED' });
       // Don't fail server startup for this
     }
 
     // Start scheduler untuk generate data otomatis
     inisialisasiPenjadwal();
-    logger.logSystemActivity('SCHEDULER_STARTED', { status: 'success' });
+    logSystemActivity('SCHEDULER_STARTED', { status: 'success' });
 
     // Start scheduler untuk agregasi metrik
     await penjadwalAgregasiMetrik.start();
-    logger.logSystemActivity('METRICS_AGGREGATION_SCHEDULER_STARTED', { status: 'success' });
+    logSystemActivity('METRICS_AGGREGATION_SCHEDULER_STARTED', { status: 'success' });
 
     // Start layanan monitoring status server
     await layananStatusServer.start();
-    logger.logSystemActivity('SERVER_STATUS_MONITORING_STARTED', { status: 'success' });
+    logSystemActivity('SERVER_STATUS_MONITORING_STARTED', { status: 'success' });
 
-    // Start server
-    const PORT = process.env.PORT || 5000;
-    server.listen(PORT, () => {
-      logger.logSystemActivity('SERVER_STARTED', {
-        port: PORT,
-        environment: process.env.NODE_ENV || 'development',
-        timestamp: new Date().toISOString()
-      });
+    // Start server with intelligent port fallback
+    const START_PORT = parseInt(process.env.PORT, 10) || 5001;
 
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    async function attemptListen(startPort, maxAttempts = 10) {
+      let lastErr = null;
+
+      for (let i = 0; i < maxAttempts; i++) {
+        const portToTry = startPort + i;
+        const outcome = await new Promise((resolve, reject) => {
+          let settled = false;
+
+          function onError(err) {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            reject(err);
+          }
+
+          function onListening() {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            resolve({ port: portToTry });
+          }
+
+          function cleanup() {
+            server.removeListener('error', onError);
+            server.removeListener('listening', onListening);
+          }
+
+          server.once('error', onError);
+          server.once('listening', onListening);
+
+          try {
+            server.listen(portToTry);
+          } catch (err) {
+            cleanup();
+            reject(err);
+          }
+        }).catch(err => ({ error: err }));
+
+        if (outcome && outcome.error) {
+          lastErr = outcome.error;
+
+          if (lastErr.code === 'EACCES') {
+            logger.logError(lastErr, { code: 'PORT_PERMISSION_DENIED', port: portToTry });
+            console.error(`❌ Permission denied when trying to bind to port ${portToTry}. Trying next port...`);
+            // try next port
+            continue;
+          }
+
+          if (lastErr.code === 'EADDRINUSE') {
+            logger.logError(lastErr, { code: 'PORT_IN_USE', port: portToTry });
+            console.error(`❌ Port ${portToTry} is already in use. Trying next port...`);
+            continue;
+          }
+
+          // Unrecoverable error
+          logger.logError(lastErr, { code: 'SERVER_LISTEN_ERROR', port: portToTry });
+          throw lastErr;
+        }
+
+        // success
+        return outcome.port;
+      }
+
+      // If all attempts failed, try ephemeral port (0)
+      const ephemeralOutcome = await new Promise((resolve, reject) => {
+        let settled = false;
+
+        function onError(err) {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(err);
+        }
+
+        function onListening() {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          const assignedPort = server.address().port;
+          resolve({ port: assignedPort });
+        }
+
+        function cleanup() {
+          server.removeListener('error', onError);
+          server.removeListener('listening', onListening);
+        }
+
+        server.once('error', onError);
+        server.once('listening', onListening);
+
+        try {
+          server.listen(0);
+        } catch (err) {
+          cleanup();
+          reject(err);
+        }
+      }).catch(err => ({ error: err }));
+
+      if (ephemeralOutcome && ephemeralOutcome.error) {
+        logger.logError(ephemeralOutcome.error, { code: 'SERVER_LISTEN_EPHEMERAL_FAILED' });
+        throw ephemeralOutcome.error;
+      }
+
+      return ephemeralOutcome.port;
+    }
+
+    const boundPort = await attemptListen(START_PORT);
+
+    logSystemActivity('SERVER_STARTED', {
+      port: boundPort,
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString()
     });
+
+    console.log(`🚀 Server running on port ${boundPort}`);
+    console.log(`📊 Health check: http://localhost:${boundPort}/health`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
     // Graceful shutdown handling
     process.on('SIGTERM', gracefulShutdown);
@@ -247,7 +368,7 @@ async function startServer() {
         console.log('✅ Database connection closed');
         console.log('👋 Server shutdown complete');
 
-        logger.logSystemActivity('SERVER_SHUTDOWN_COMPLETE', {
+        logSystemActivity('SERVER_SHUTDOWN_COMPLETE', {
           timestamp: new Date().toISOString()
         });
 
@@ -262,12 +383,11 @@ async function startServer() {
     }
 
   } catch (error) {
-    logger.logSystemError('SERVER_START_FAILED', error, {
-      port: process.env.PORT || 5000
-    });
+    // Log and rethrow so callers (or tests) can handle the failure
+    logError(error, { code: 'SERVER_START_FAILED', port: process.env.PORT || 5001 });
 
     console.error('❌ Failed to start server:', error);
-    process.exit(1);
+    throw error;
   }
 }
 
@@ -276,5 +396,8 @@ module.exports = { app, server, io, startServer };
 
 // Start server jika file ini dijalankan langsung
 if (require.main === module) {
-  startServer();
+  startServer().catch((err) => {
+    // In the main runtime, exit with non-zero on start failure
+    process.exit(1);
+  });
 }

@@ -10,7 +10,7 @@ const { HTTP_STATUS, ERROR_CODE } = require('../utilitas/konstanta');
 const autentikasi = require('../middleware/autentikasi');
 
 // Semua route memerlukan autentikasi admin
-router.use(autentikasi);
+router.use(autentikasi.verifikasiToken, autentikasi.verifikasiPeran(['admin']));
 
 // Get status penjadwal
 router.get('/status', async (req, res) => {

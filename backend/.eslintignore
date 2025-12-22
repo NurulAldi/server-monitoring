@@ -1,0 +1,5 @@
+node_modules/
+coverage/
+logs/
+*.min.js
+.nyc_output/

@@ -4,9 +4,21 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { HTTP_STATUS, ERROR_CODE } = require('../utilitas/konstanta');
-const { logger } = require('../utilitas/logger');
+const { logger, logUserLogin } = require('../utilitas/logger');
 const Pengguna = require('../model/Pengguna');
 const layananEmail = require('../layanan/layananEmail');
+
+// Helper function untuk mendeteksi device type
+function getDeviceType(userAgent = '') {
+  const ua = userAgent.toLowerCase();
+  if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
+    return 'mobile';
+  } else if (ua.includes('tablet') || ua.includes('ipad')) {
+    return 'tablet';
+  } else {
+    return 'desktop';
+  }
+}
 
 /**
  * DESKRIPSI: Handle request registrasi pengguna baru
@@ -234,6 +246,17 @@ async function login(req, res) {
     // Verify password
     const isPasswordValid = await bcrypt.compare(kataSandi, pengguna.kataSandiHash);
     if (!isPasswordValid) {
+      // Log failed login attempt
+      logUserLogin(pengguna._id, {
+        method: 'password',
+        deviceType: getDeviceType(req.get('User-Agent')),
+        location: 'unknown',
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        success: false,
+        failureReason: 'invalid_password'
+      });
+
       // Increment login attempts
       pengguna.loginAttempts = (pengguna.loginAttempts || 0) + 1;
 
@@ -292,10 +315,14 @@ async function login(req, res) {
     await pengguna.save();
 
     // Log berhasil login
-    logger.logUserActivity(pengguna._id, 'LOGIN_SUCCESS', {
-      email: email,
+    logUserLogin(pengguna._id, {
+      method: 'password',
+      deviceType: getDeviceType(req.get('User-Agent')),
+      location: 'unknown', // Could be enhanced with geo-IP lookup
       ip: req.ip,
-      deviceInfo: req.get('User-Agent')
+      userAgent: req.get('User-Agent'),
+      success: true,
+      sessionId: Date.now().toString()
     });
 
     // Response sukses dengan tokens

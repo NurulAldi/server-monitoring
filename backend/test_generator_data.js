@@ -11,34 +11,35 @@ const { logger } = require('./src/utilitas/logger');
  * Test generate data untuk satu server
  */
 async function testGenerateSingleServer() {
-  console.log('\n🧪 Testing Generate Data Single Server');
+  logger.info('Testing Generate Data Single Server');
 
   try {
     // Cari server pertama yang aktif
     const server = await Server.findOne({ statusAktif: true });
     if (!server) {
-      console.log('❌ Tidak ada server aktif untuk testing');
+      logger.warn('No active server found for testing');
       return;
     }
 
-    console.log(`📊 Generating data untuk server: ${server.nama} (${server._id})`);
+    logger.info(`Generating data for server: ${server.nama} (${server._id})`);
 
     const result = await generateDataMetrikServer(server._id);
 
     if (result.success) {
-      console.log('✅ Data berhasil dihasilkan');
-      console.log(`   - Kondisi: ${result.kondisi}`);
-      console.log(`   - Status: ${result.statusKesehatan}`);
-      console.log(`   - CPU: ${result.data.cpu.persentase}%`);
-      console.log(`   - Memory: ${result.data.memori.persentase}%`);
-      console.log(`   - Disk: ${result.data.disk.persentase}%`);
-      console.log(`   - Latency: ${result.data.jaringan.latensiMs}ms`);
+      logger.info('Data generated successfully', {
+        condition: result.kondisi,
+        healthStatus: result.statusKesehatan,
+        cpu: result.data.cpu.persentase,
+        memory: result.data.memori.persentase,
+        disk: result.data.disk.persentase,
+        latency: result.data.jaringan.latensiMs
+      });
     } else {
-      console.log('❌ Gagal generate data');
+      logger.error('Failed to generate data', { error: result.error });
     }
 
   } catch (error) {
-    console.error('❌ Error testing single server:', error.message);
+    logger.error('Error testing single server', { error: error.message });
   }
 }
 
@@ -46,26 +47,28 @@ async function testGenerateSingleServer() {
  * Test generate data untuk semua server
  */
 async function testGenerateAllServers() {
-  console.log('\n🧪 Testing Generate Data All Servers');
+  logger.info('Testing Generate Data All Servers');
 
   try {
     const result = await generateDataSemuaServer();
 
-    console.log(`📊 Batch generation completed:`);
-    console.log(`   - Total servers: ${result.totalServers}`);
-    console.log(`   - Success: ${result.results.filter(r => r.success).length}`);
-    console.log(`   - Errors: ${result.results.filter(r => !r.success).length}`);
+    logger.info('Batch generation completed', {
+      totalServers: result.totalServers,
+      successCount: result.results.filter(r => r.success).length,
+      errorCount: result.results.filter(r => !r.success).length
+    });
 
     if (result.results.length > 0) {
       const sampleResult = result.results[0];
-      console.log(`\n📈 Sample result:`);
-      console.log(`   - Server: ${sampleResult.data.cpu ? 'Valid' : 'Invalid'}`);
-      console.log(`   - Kondisi: ${sampleResult.kondisi}`);
-      console.log(`   - CPU: ${sampleResult.data.cpu?.persentase || 'N/A'}%`);
+      logger.info('Sample result', {
+        server: sampleResult.data.cpu ? 'Valid' : 'Invalid',
+        condition: sampleResult.kondisi,
+        cpu: sampleResult.data.cpu?.persentase || 'N/A'
+      });
     }
 
   } catch (error) {
-    console.error('❌ Error testing all servers:', error.message);
+    logger.error('Error testing all servers', { error: error.message });
   }
 }
 
@@ -73,16 +76,16 @@ async function testGenerateAllServers() {
  * Test force condition
  */
 async function testForceCondition() {
-  console.log('\n🧪 Testing Force Server Condition');
+  logger.info('Testing Force Server Condition');
 
   try {
     const server = await Server.findOne({ statusAktif: true });
     if (!server) {
-      console.log('❌ Tidak ada server aktif untuk testing');
+      logger.warn('No active server found for testing');
       return;
     }
 
-    console.log(`🔧 Force server ${server.nama} ke kondisi CRITICAL`);
+    logger.info(`Force server ${server.nama} to CRITICAL condition`);
 
     // Force ke critical
     forceServerCondition(server._id, 'CRITICAL');
@@ -91,11 +94,12 @@ async function testForceCondition() {
     const result = await generateDataMetrikServer(server._id);
 
     if (result.success) {
-      console.log('✅ Data critical berhasil dihasilkan');
-      console.log(`   - Kondisi: ${result.kondisi} (harus CRITICAL)`);
-      console.log(`   - CPU: ${result.data.cpu.persentase}% (harus > 85%)`);
-      console.log(`   - Memory: ${result.data.memori.persentase}% (harus > 90%)`);
-      console.log(`   - Disk: ${result.data.disk.persentase}% (harus > 95%)`);
+      logger.info('Critical data generated successfully', {
+        condition: result.kondisi,
+        cpu: result.data.cpu.persentase,
+        memory: result.data.memori.persentase,
+        disk: result.data.disk.persentase
+      });
 
       // Validasi threshold
       const isValidCritical = (
@@ -105,11 +109,15 @@ async function testForceCondition() {
         result.kondisi === 'CRITICAL'
       );
 
-      console.log(`   - Validasi: ${isValidCritical ? '✅ PASSED' : '❌ FAILED'}`);
+      logger.info('Validation result', {
+        isValid: isValidCritical,
+        expected: 'CRITICAL condition with high metrics',
+        actual: `Condition: ${result.kondisi}, CPU: ${result.data.cpu.persentase}%, Memory: ${result.data.memori.persentase}%, Disk: ${result.data.disk.persentase}%`
+      });
     }
 
   } catch (error) {
-    console.error('❌ Error testing force condition:', error.message);
+    logger.error('Error testing force condition', { error: error.message });
   }
 }
 
@@ -117,34 +125,39 @@ async function testForceCondition() {
  * Test state persistence
  */
 async function testStatePersistence() {
-  console.log('\n🧪 Testing State Persistence');
+  logger.info('Testing State Persistence');
 
   try {
     const server = await Server.findOne({ statusAktif: true });
     if (!server) {
-      console.log('❌ Tidak ada server aktif untuk testing');
+      logger.warn('No active server found for testing');
       return;
     }
 
-    console.log(`🔄 Testing state persistence untuk ${server.nama}`);
+    logger.info(`Testing state persistence for ${server.nama}`);
 
     // Reset state
     resetServerState(server._id);
-    console.log('   - State direset');
+    logger.info('State reset');
 
     // Generate beberapa data
+    const iterations = [];
     for (let i = 0; i < 3; i++) {
       const result = await generateDataMetrikServer(server._id);
-      console.log(`   - Iteration ${i + 1}: ${result.kondisi} (${result.data.cpu.persentase}% CPU)`);
+      iterations.push({
+        iteration: i + 1,
+        condition: result.kondisi,
+        cpu: result.data.cpu.persentase
+      });
 
       // Delay kecil
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    console.log('✅ State persistence test completed');
+    logger.info('State persistence test completed', { iterations });
 
   } catch (error) {
-    console.error('❌ Error testing state persistence:', error.message);
+    logger.error('Error testing state persistence', { error: error.message });
   }
 }
 
@@ -152,16 +165,16 @@ async function testStatePersistence() {
  * Test data validation
  */
 async function testDataValidation() {
-  console.log('\n🧪 Testing Data Validation');
+  logger.info('Testing Data Validation');
 
   try {
     const server = await Server.findOne({ statusAktif: true });
     if (!server) {
-      console.log('❌ Tidak ada server aktif untuk testing');
+      logger.warn('No active server found for testing');
       return;
     }
 
-    console.log(`🔍 Validating data untuk ${server.nama}`);
+    logger.info(`Validating data for ${server.nama}`);
 
     const result = await generateDataMetrikServer(server._id);
 
@@ -182,13 +195,16 @@ async function testDataValidation() {
       ];
 
       let allValid = true;
-      validations.forEach(v => {
+      const validationResults = validations.map(v => {
         const valid = v.value >= v.min && v.value <= v.max;
-        console.log(`   - ${v.field}: ${v.value} ${valid ? '✅' : '❌'}`);
         if (!valid) allValid = false;
+        return { field: v.field, value: v.value, valid };
       });
 
-      console.log(`\n📊 Overall validation: ${allValid ? '✅ PASSED' : '❌ FAILED'}`);
+      logger.info('Range validation results', {
+        overallValid: allValid,
+        validations: validationResults
+      });
 
       // Validasi kondisi vs threshold
       const kondisiExpected = result.kondisi;
@@ -200,14 +216,19 @@ async function testDataValidation() {
         kondisiValid = data.cpu.persentase >= 60 || data.memori.persentase >= 70;
       }
 
-      console.log(`🔍 Kondisi validation: ${kondisiValid ? '✅ PASSED' : '❌ FAILED'}`);
+      logger.info('Condition validation', {
+        condition: kondisiExpected,
+        isValid: kondisiValid,
+        cpu: data.cpu.persentase,
+        memory: data.memori.persentase
+      });
 
     } else {
-      console.log('❌ Tidak ada data untuk divalidasi');
+      logger.warn('No data available for validation');
     }
 
   } catch (error) {
-    console.error('❌ Error testing data validation:', error.message);
+    logger.error('Error testing data validation', { error: error.message });
   }
 }
 
@@ -215,16 +236,16 @@ async function testDataValidation() {
  * Test performance
  */
 async function testPerformance() {
-  console.log('\n🧪 Testing Performance');
+  logger.info('Testing Performance');
 
   try {
     const server = await Server.findOne({ statusAktif: true });
     if (!server) {
-      console.log('❌ Tidak ada server aktif untuk testing');
+      logger.warn('No active server found for testing');
       return;
     }
 
-    console.log(`⚡ Performance test untuk ${server.nama}`);
+    logger.info(`Performance test for ${server.nama}`);
 
     const iterations = 10;
     const startTime = Date.now();
@@ -237,18 +258,18 @@ async function testPerformance() {
     const totalTime = endTime - startTime;
     const avgTime = totalTime / iterations;
 
-    console.log(`📈 Performance results:`);
-    console.log(`   - Iterations: ${iterations}`);
-    console.log(`   - Total time: ${totalTime}ms`);
-    console.log(`   - Average time: ${avgTime.toFixed(2)}ms per generation`);
-    console.log(`   - Rate: ${(1000 / avgTime).toFixed(2)} generations per second`);
+    const performanceMetrics = {
+      iterations,
+      totalTimeMs: totalTime,
+      avgTimeMs: parseFloat(avgTime.toFixed(2)),
+      ratePerSecond: parseFloat((1000 / avgTime).toFixed(2)),
+      performanceOk: avgTime < 500
+    };
 
-    // Performance threshold
-    const performanceOk = avgTime < 500; // < 500ms per generation
-    console.log(`   - Performance: ${performanceOk ? '✅ GOOD' : '❌ SLOW'}`);
+    logger.info('Performance test results', performanceMetrics);
 
   } catch (error) {
-    console.error('❌ Error testing performance:', error.message);
+    logger.error('Error testing performance', { error: error.message });
   }
 }
 
@@ -256,14 +277,13 @@ async function testPerformance() {
  * Main test runner
  */
 async function runAllTests() {
-  console.log('🚀 Starting Generator Data Dummy Tests');
-  console.log('=====================================');
+  logger.info('Starting Generator Data Dummy Tests');
 
   try {
     // Connect to database if not connected
     if (mongoose.connection.readyState !== 1) {
       await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/monitoring-server');
-      console.log('📡 Connected to database');
+      logger.info('Connected to database');
     }
 
     // Run all tests
@@ -274,15 +294,14 @@ async function runAllTests() {
     await testDataValidation();
     await testPerformance();
 
-    console.log('\n🎉 All tests completed!');
-    console.log('========================');
+    logger.info('All tests completed successfully');
 
   } catch (error) {
-    console.error('💥 Test runner failed:', error);
+    logger.error('Test runner failed', { error: error.message });
   } finally {
     // Close database connection
     await mongoose.connection.close();
-    console.log('📪 Database connection closed');
+    logger.info('Database connection closed');
   }
 }
 

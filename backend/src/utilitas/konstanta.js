@@ -42,8 +42,10 @@ const STATUS_SERVER = {
 
 // Role pengguna
 const PERAN_PENGGUNA = {
+  SUPERADMIN: 'superadmin',
   ADMIN: 'admin',
-  USER: 'user'
+  USER: 'user',
+  RESEARCHER: 'researcher'
 };
 
 // Status aktif pengguna

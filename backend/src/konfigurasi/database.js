@@ -25,8 +25,9 @@ async function koneksiDatabase() {
       retryReads: true, // Retry operasi read jika gagal
 
       // Buffer settings
-      bufferCommands: false, // Jangan buffer command jika disconnect
-      bufferMaxEntries: 0, // Maksimal buffer entries
+      // `bufferMaxEntries` was removed from recent MongoDB drivers and passing it
+      // causes a connection error. We disable command buffering using `bufferCommands` only.
+      bufferCommands: false // Jangan buffer command jika disconnect
     };
 
     // Koneksi ke MongoDB
@@ -74,6 +75,9 @@ async function tutupKoneksiDatabase() {
 // Export fungsi dan instance mongoose
 module.exports = {
   koneksiDatabase,
+  // Backwards-compatible alias for English-speaking modules
+  connectDatabase: koneksiDatabase,
   tutupKoneksiDatabase,
+  closeDatabaseConnection: tutupKoneksiDatabase,
   mongoose // Export mongoose instance untuk digunakan di model
 };

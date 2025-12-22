@@ -1,0 +1,360 @@
+// Integration tests for authentication endpoints
+const request = require('supertest');
+const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
+const app = require('../../src/server');
+const Pengguna = require('../../src/model/Pengguna');
+
+let mongoServer;
+
+describe('Authentication Endpoints Integration Tests', () => {
+  let server;
+  let agent;
+
+  beforeAll(async () => {
+    // Start in-memory MongoDB
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+
+    // Connect to test database
+    await mongoose.connect(mongoUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    // Start server
+    server = app.listen(0); // Use random available port
+    agent = request.agent(server);
+  });
+
+  afterAll(async () => {
+    // Close server and database
+    if (server) {
+      server.close();
+    }
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+    if (mongoServer) {
+      await mongoServer.stop();
+    }
+  });
+
+  beforeEach(async () => {
+    // Clear all collections before each test
+    await Pengguna.deleteMany({});
+  });
+
+  describe('POST /api/auth/register', () => {
+    test('should register a new user successfully', async () => {
+      const userData = {
+        namaPengguna: 'testuser',
+        email: 'test@example.com',
+        kataSandi: 'Password123',
+        konfirmasiKataSandi: 'Password123'
+      };
+
+      const response = await agent
+        .post('/api/auth/register')
+        .send(userData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user).toHaveProperty('id');
+      expect(response.body.data.user.email).toBe(userData.email);
+      expect(response.body.data.user.namaPengguna).toBe(userData.namaPengguna);
+      expect(response.body.data.requiresVerification).toBe(true);
+    });
+
+    test('should reject registration with existing email', async () => {
+      // Create existing user
+      const existingUser = new Pengguna({
+        namaPengguna: 'existinguser',
+        email: 'existing@example.com',
+        kataSandiHash: 'hashedpassword',
+        peran: 'user',
+        statusAktif: true,
+        emailTerverifikasi: true
+      });
+      await existingUser.save();
+
+      const userData = {
+        namaPengguna: 'newuser',
+        email: 'existing@example.com', // Same email
+        kataSandi: 'Password123',
+        konfirmasiKataSandi: 'Password123'
+      };
+
+      const response = await agent
+        .post('/api/auth/register')
+        .send(userData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.message).toBe('Email sudah terdaftar');
+    });
+
+    test('should reject registration with invalid data', async () => {
+      const invalidData = {
+        namaPengguna: 'tu', // Too short
+        email: 'invalid-email',
+        kataSandi: 'weak',
+        konfirmasiKataSandi: 'different'
+      };
+
+      const response = await agent
+        .post('/api/auth/register')
+        .send(invalidData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toHaveProperty('details');
+      expect(Array.isArray(response.body.error.details)).toBe(true);
+    });
+  });
+
+  describe('POST /api/auth/login', () => {
+    let testUser;
+
+    beforeEach(async () => {
+      // Create a test user
+      const hashedPassword = await require('bcrypt').hash('Password123', 12);
+      testUser = new Pengguna({
+        namaPengguna: 'testuser',
+        email: 'test@example.com',
+        kataSandiHash: hashedPassword,
+        peran: 'user',
+        statusAktif: true,
+        emailTerverifikasi: true
+      });
+      await testUser.save();
+    });
+
+    test('should login successfully with correct credentials', async () => {
+      const loginData = {
+        email: 'test@example.com',
+        kataSandi: 'Password123'
+      };
+
+      const response = await agent
+        .post('/api/auth/login')
+        .send(loginData)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('user');
+      expect(response.body.data).toHaveProperty('tokens');
+      expect(response.body.data.tokens).toHaveProperty('accessToken');
+      expect(response.body.data.tokens).toHaveProperty('refreshToken');
+      expect(response.body.data.user.email).toBe(loginData.email);
+    });
+
+    test('should reject login with wrong password', async () => {
+      const loginData = {
+        email: 'test@example.com',
+        kataSandi: 'WrongPassword123'
+      };
+
+      const response = await agent
+        .post('/api/auth/login')
+        .send(loginData)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.message).toBe('Email atau password salah');
+    });
+
+    test('should reject login with non-existent email', async () => {
+      const loginData = {
+        email: 'nonexistent@example.com',
+        kataSandi: 'Password123'
+      };
+
+      const response = await agent
+        .post('/api/auth/login')
+        .send(loginData)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.message).toBe('Email atau password salah');
+    });
+
+    test('should reject login for inactive account', async () => {
+      // Make user inactive
+      testUser.statusAktif = false;
+      await testUser.save();
+
+      const loginData = {
+        email: 'test@example.com',
+        kataSandi: 'Password123'
+      };
+
+      const response = await agent
+        .post('/api/auth/login')
+        .send(loginData)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.message).toBe('Akun belum diaktifkan');
+    });
+  });
+
+  describe('POST /api/auth/verify-email', () => {
+    let testUser;
+    let verificationToken;
+
+    beforeEach(async () => {
+      // Create a test user with verification token
+      const jwt = require('jsonwebtoken');
+      verificationToken = jwt.sign(
+        { email: 'test@example.com', type: 'email_verification' },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      testUser = new Pengguna({
+        namaPengguna: 'testuser',
+        email: 'test@example.com',
+        kataSandiHash: 'hashedpassword',
+        peran: 'user',
+        statusAktif: false,
+        emailTerverifikasi: false,
+        tokenVerifikasi: verificationToken
+      });
+      await testUser.save();
+    });
+
+    test('should verify email successfully', async () => {
+      const response = await agent
+        .post('/api/auth/verify-email')
+        .send({ token: verificationToken })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toBe('Email berhasil diverifikasi');
+
+      // Check if user was updated in database
+      const updatedUser = await Pengguna.findById(testUser._id);
+      expect(updatedUser.emailTerverifikasi).toBe(true);
+      expect(updatedUser.statusAktif).toBe(true);
+      expect(updatedUser.tokenVerifikasi).toBeNull();
+    });
+
+    test('should reject invalid token', async () => {
+      const response = await agent
+        .post('/api/auth/verify-email')
+        .send({ token: 'invalid-token' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.message).toBe('Token verifikasi tidak valid atau sudah expired');
+    });
+  });
+
+  describe('POST /api/auth/refresh-token', () => {
+    let refreshToken;
+
+    beforeEach(async () => {
+      // Create a valid refresh token
+      const jwt = require('jsonwebtoken');
+      const userId = new mongoose.Types.ObjectId();
+      refreshToken = jwt.sign(
+        { userId, sessionId: 'test-session' },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+    });
+
+    test('should refresh token successfully', async () => {
+      const response = await agent
+        .post('/api/auth/refresh-token')
+        .send({ refreshToken })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('accessToken');
+      expect(response.body.data.tokenType).toBe('Bearer');
+      expect(response.body.data.expiresIn).toBe(900);
+    });
+
+    test('should reject invalid refresh token', async () => {
+      const response = await agent
+        .post('/api/auth/refresh-token')
+        .send({ refreshToken: 'invalid-token' })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.message).toBe('Invalid refresh token');
+    });
+  });
+
+  describe('POST /api/auth/logout', () => {
+    test('should logout successfully', async () => {
+      const response = await agent
+        .post('/api/auth/logout')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toBe('Logged out successfully');
+    });
+  });
+
+  describe('GET /api/auth/profile', () => {
+    let testUser;
+    let accessToken;
+
+    beforeEach(async () => {
+      // Create test user
+      testUser = new Pengguna({
+        namaPengguna: 'testuser',
+        email: 'test@example.com',
+        kataSandiHash: 'hashedpassword',
+        peran: 'user',
+        statusAktif: true,
+        emailTerverifikasi: true
+      });
+      await testUser.save();
+
+      // Generate access token
+      const jwt = require('jsonwebtoken');
+      accessToken = jwt.sign(
+        {
+          userId: testUser._id,
+          email: testUser.email,
+          role: testUser.peran
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '15m' }
+      );
+    });
+
+    test('should get user profile with valid token', async () => {
+      const response = await agent
+        .get('/api/auth/profile')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.id).toBe(testUser._id.toString());
+      expect(response.body.data.user.email).toBe(testUser.email);
+      expect(response.body.data.user.namaPengguna).toBe(testUser.namaPengguna);
+      expect(response.body.data.user).not.toHaveProperty('kataSandiHash');
+    });
+
+    test('should reject profile access without token', async () => {
+      const response = await agent
+        .get('/api/auth/profile')
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    test('should reject profile access with invalid token', async () => {
+      const response = await agent
+        .get('/api/auth/profile')
+        .set('Authorization', 'Bearer invalid-token')
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+});

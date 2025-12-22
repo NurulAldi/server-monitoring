@@ -384,7 +384,7 @@ alertConditionSchema.statics.dapatkanByParameter = function(parameter, serverId 
 /**
  * Method untuk validasi kondisi tidak konflik
  */
-alertConditionSchema.statics.validasiKondisi = function(kondisiBaru) {
+alertConditionSchema.statics.validasiKondisi = async function(kondisiBaru) {
   const konflik = await this.find({
     parameter: kondisiBaru.parameter,
     serverId: kondisiBaru.serverId,

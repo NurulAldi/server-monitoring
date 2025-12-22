@@ -383,7 +383,12 @@ async function verifikasiEmail(req, res, next) {
 // Export semua middleware autentikasi
 module.exports = {
   autentikasiToken,
+  // Backwards-compatible English aliases
+  authenticateToken: autentikasiToken,
+  // Indonesian aliases expected by route files
+  verifikasiToken: autentikasiToken,
   verifikasiPeran,
+  requireRole: verifikasiPeran, // Alias untuk kompatibilitas
   verifikasiEmail,
   verifikasiRefreshToken
 };

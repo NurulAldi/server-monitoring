@@ -1,4 +1,4 @@
-const { OpenAI } = require('openai'); // Jika menggunakan OpenAI, atau ganti dengan library AI lainnya
+const { GoogleGenerativeAI } = require('@google/generative-ai'); // Menggunakan Gemini AI
 const {
   getSystemPrompt,
   buildContext,
@@ -9,14 +9,11 @@ const {
 
 class LayananChatbotAI {
   constructor() {
-    // Inisialisasi AI client (contoh menggunakan OpenAI)
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY, // Pastikan ada di environment
-    });
+    // Inisialisasi AI client menggunakan Gemini
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     // Gunakan system prompt dari shared service
     this.systemPrompt = getSystemPrompt('chatbot');
-  }
   }
 
   /**
@@ -206,8 +203,6 @@ class LayananChatbotAI {
         isValid: false,
         logId: null
       };
-    }
-  }
     }
   }
 

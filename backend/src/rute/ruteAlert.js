@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 const kontrolerAlert = require('../kontroler/kontrolerAlert');
 const { authenticateToken, requireRole } = require('../middleware/autentikasi');
-const { rateLimiter } = require('../middleware/rateLimiter');
+const rateLimiter = require('../middleware/rateLimiter');
 
 // Middleware untuk semua rute alert
 router.use(authenticateToken);

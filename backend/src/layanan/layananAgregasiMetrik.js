@@ -6,7 +6,7 @@ const MetrikAgregatHarian = require('../model/MetrikAgregatHarian');
 const MetrikTrend = require('../model/MetrikTrend');
 const MetrikBaseline = require('../model/MetrikBaseline');
 const Server = require('../model/Server');
-const logger = require('../utilitas/logger');
+const { logger } = require('../utilitas/logger');
 
 // Import Socket.IO untuk real-time updates
 let io = null;

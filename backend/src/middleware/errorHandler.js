@@ -3,6 +3,20 @@
 
 const { logger } = require('../utilitas/logger');
 const { HTTP_STATUS, ERROR_CODE } = require('../utilitas/konstanta');
+const {
+  AppError,
+  ValidationError,
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  ConflictError,
+  RateLimitError,
+  DatabaseError,
+  ExternalAPIError,
+  SocketError,
+  BusinessLogicError,
+  FileError
+} = require('../utilitas/customErrors');
 
 // Error handler middleware (HARUS memiliki 4 parameter: err, req, res, next)
 function errorHandler(err, req, res, next) {
@@ -12,11 +26,44 @@ function errorHandler(err, req, res, next) {
     url: req.url,
     ip: req.ip,
     userAgent: req.get('User-Agent'),
-    userId: req.user?.id || 'anonymous',
+    userId: req.user?.userId || req.user?.id || 'anonymous',
     timestamp: new Date().toISOString()
   });
 
-  // Default error response
+  // Handle custom AppError instances
+  if (err instanceof AppError) {
+    const errorResponse = {
+      success: false,
+      error: {
+        code: err.errorCode,
+        message: err.message,
+        timestamp: err.timestamp
+      }
+    };
+
+    // Add additional details untuk certain error types
+    if (err instanceof ValidationError && err.details) {
+      errorResponse.error.details = err.details;
+    }
+
+    if (err instanceof AuthorizationError && err.requiredRole) {
+      errorResponse.error.requiredRole = err.requiredRole;
+    }
+
+    if (err instanceof RateLimitError && err.retryAfter) {
+      res.set('Retry-After', err.retryAfter);
+    }
+
+    // Add stack trace in development
+    if (process.env.NODE_ENV === 'development') {
+      errorResponse.error.stack = err.stack;
+      errorResponse.error.name = err.name;
+    }
+
+    return res.status(err.statusCode).json(errorResponse);
+  }
+
+  // Handle legacy error types (backward compatibility)
   let statusCode = HTTP_STATUS.INTERNAL_SERVER_ERROR;
   let errorCode = ERROR_CODE.INTERNAL_ERROR;
   let message = 'Terjadi kesalahan server. Silakan coba lagi nanti.';
@@ -142,17 +189,76 @@ function validationErrorHandler(req, res, next) {
   const errors = req.validationErrors || [];
 
   if (errors.length > 0) {
-    const error = new Error('Validasi gagal');
-    error.statusCode = HTTP_STATUS.BAD_REQUEST;
-    error.details = errors.map(err => ({
+    const error = new ValidationError('Validasi gagal', errors.map(err => ({
       field: err.param,
       message: err.msg,
       value: err.value
-    }));
+    })));
     return next(error);
   }
 
   next();
+}
+
+// Socket.IO error handler
+function handleSocketError(socket, error, eventName = null) {
+  // Log socket error
+  logger.logError(error, {
+    socketId: socket.id,
+    userId: socket.userId || 'anonymous',
+    event: eventName,
+    type: 'socket_error',
+    timestamp: new Date().toISOString()
+  });
+
+  // Emit error event to client
+  const errorData = {
+    success: false,
+    error: {
+      code: error.errorCode || ERROR_CODE.INTERNAL_ERROR,
+      message: error.message || 'Terjadi kesalahan pada koneksi real-time',
+      timestamp: new Date().toISOString()
+    }
+  };
+
+  // Add event context if available
+  if (eventName) {
+    errorData.error.event = eventName;
+  }
+
+  // Send error to client
+  socket.emit('error', errorData);
+}
+
+// Async error wrapper untuk Socket.IO event handlers
+function asyncSocketHandler(fn) {
+  return async (socket, data, callback) => {
+    try {
+      const result = await fn(socket, data);
+      if (callback) callback({ success: true, data: result });
+    } catch (error) {
+      logger.logError(error, {
+        socketId: socket.id,
+        userId: socket.userId || 'anonymous',
+        event: data?.event || 'unknown',
+        type: 'socket_handler_error',
+        timestamp: new Date().toISOString()
+      });
+
+      if (callback) {
+        callback({
+          success: false,
+          error: {
+            code: error.errorCode || ERROR_CODE.INTERNAL_ERROR,
+            message: error.message || 'Terjadi kesalahan pada operasi real-time',
+            timestamp: new Date().toISOString()
+          }
+        });
+      } else {
+        handleSocketError(socket, error, data?.event);
+      }
+    }
+  };
 }
 
 // Export semua error handlers
@@ -160,5 +266,7 @@ module.exports = {
   errorHandler,
   notFoundHandler,
   asyncErrorHandler,
-  validationErrorHandler
+  validationErrorHandler,
+  handleSocketError,
+  asyncSocketHandler
 };

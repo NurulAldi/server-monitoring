@@ -2,9 +2,20 @@
 // Implementasi event-event Socket.IO sesuai rancangan arsitektur
 
 const jwt = require('jsonwebtoken');
-const { logger } = require('../utilitas/logger');
+const { logger, logSocketConnection } = require('../utilitas/logger');
 const Server = require('../model/Server');
 const Pengguna = require('../model/Pengguna');
+
+// Import validasi Socket.IO
+const {
+  validateSocketEvent,
+  validateRoomName,
+  validateSocketAuth
+} = require('../middleware/socketValidasi');
+
+// Import error handling
+const { handleSocketError, asyncSocketHandler } = require('../middleware/errorHandler');
+const { SocketError, ValidationError, AuthorizationError } = require('../utilitas/customErrors');
 
 // Connection tracking untuk rate limiting dan security monitoring
 const connectionTracker = new Map(); // userId -> {connections: Set, firstConnection, totalConnections, lastActivity}
@@ -22,6 +33,17 @@ function setupSocketHandlers(io) {
       const token = socket.handshake.auth?.token ||
                    socket.handshake.query?.token ||
                    socket.handshake.headers?.authorization?.replace('Bearer ', '');
+
+      // Validasi token format terlebih dahulu
+      const tokenValidation = validateSocketAuth(token);
+      if (!tokenValidation.valid) {
+        logger.logSystemActivity('SOCKET_AUTH_FAILED_TOKEN_VALIDATION', {
+          socketId: socket.id,
+          ip: socket.handshake.address,
+          error: tokenValidation.error
+        });
+        return next(new Error(tokenValidation.error));
+      }
 
       if (!token) {
         logger.logSystemActivity('SOCKET_AUTH_FAILED_NO_TOKEN', {
@@ -64,7 +86,7 @@ function setupSocketHandlers(io) {
       }
 
       // Validasi role
-      const validRoles = ['user', 'admin', 'superadmin'];
+      const validRoles = ['user', 'admin', 'superadmin', 'researcher'];
       if (!validRoles.includes(decoded.role)) {
         logger.logSystemActivity('SOCKET_AUTH_FAILED_INVALID_ROLE', {
           socketId: socket.id,
@@ -125,9 +147,11 @@ function setupSocketHandlers(io) {
 
   // Handler koneksi utama
   io.on('connection', (socket) => {
-    logger.logSystemActivity('SOCKET_CONNECTED', {
-      userId: socket.userId,
+    logSocketConnection(socket.userId || 'anonymous', 'connect', {
       socketId: socket.id,
+      connectionType: socket.handshake.query.transport || 'websocket',
+      rooms: [],
+      ip: socket.handshake.address,
       userAgent: socket.handshake.headers['user-agent']
     });
 
@@ -139,14 +163,22 @@ function setupSocketHandlers(io) {
 
     // Handler disconnect
     socket.on('disconnect', (reason) => {
+      // Calculate connection duration
+      const connectionDuration = socket.authenticatedAt ?
+        Date.now() - socket.authenticatedAt.getTime() : null;
+
+      logSocketConnection(socket.userId || 'anonymous', 'disconnect', {
+        socketId: socket.id,
+        connectionType: socket.handshake.query.transport || 'websocket',
+        rooms: Array.from(socket.rooms || []),
+        connectionDuration,
+        disconnectReason: reason,
+        ip: socket.handshake.address,
+        userAgent: socket.handshake.headers['user-agent']
+      });
+
       // Remove connection tracking
       removeConnectionTracking(socket.userId, socket.id);
-
-      logger.logSystemActivity('SOCKET_DISCONNECTED', {
-        userId: socket.userId,
-        socketId: socket.id,
-        reason: reason
-      });
     });
 
     // Error handler
@@ -361,6 +393,19 @@ function setupMonitoringNamespace(io) {
 
     // Client dapat request specific server metrics
     socket.on('metrik:subscribe', (serverId) => {
+      // Validasi event dan payload
+      const validation = validateSocketEvent('join-server', { serverId }, socket);
+      if (!validation.valid) {
+        socket.emit('error', { message: validation.error });
+        logger.logSystemActivity('SOCKET_EVENT_VALIDATION_FAILED', {
+          userId: socket.userId,
+          socketId: socket.id,
+          event: 'metrik:subscribe',
+          error: validation.error
+        });
+        return;
+      }
+
       // Validasi akses server
       const hasAccess = socket.authorizedServers &&
                        socket.authorizedServers.some(server => server.id === serverId);
@@ -475,6 +520,19 @@ function setupChatNamespace(io) {
 
     // Handle join room
     socket.on('ruang:bergabung', async (data) => {
+      // Validasi event dan payload
+      const validation = validateSocketEvent('join-server', data, socket);
+      if (!validation.valid) {
+        socket.emit('error', { message: validation.error });
+        logger.logSystemActivity('SOCKET_EVENT_VALIDATION_FAILED', {
+          userId: socket.userId,
+          socketId: socket.id,
+          event: 'ruang:bergabung',
+          error: validation.error
+        });
+        return;
+      }
+
       const { ruangId } = data;
 
       // Validate room access (server-specific rooms)
@@ -528,45 +586,46 @@ function setupChatNamespace(io) {
     });
 
     // Handle new message
-    socket.on('pesan:kirim', async (data) => {
-      try {
-        const { ruangId, pesan, tipe = 'teks', mention = [], balasKe = null } = data;
-
-        // Validate room membership
-        if (!socket.rooms.has(ruangId)) {
-          socket.emit('error', { message: 'Belum bergabung dengan ruang' });
-          return;
-        }
-
-        const messageData = {
-          pesanId: `msg_${Date.now()}_${socket.userId}`,
-          ruangId,
-          pengirimId: socket.userId,
-          namaPengirim: socket.userData.nama,
-          pesan,
-          timestamp: new Date().toISOString(),
-          tipe,
-          mention,
-          balasKe
-        };
-
-        // Emit to room
-        chat.to(ruangId).emit('pesan:baru', messageData);
-
-        // If message mentions AI, trigger AI response
-        if (mention.includes('ai_assistant') || pesan.toLowerCase().includes('ai')) {
-          setTimeout(() => {
-            emitAIResponse(chat, ruangId, messageData.pesanId, pesan);
-          }, 1000 + Math.random() * 2000); // Simulate AI thinking time
-        }
-
-        logger.debug(`Message sent in room ${ruangId} by user ${socket.userId}`);
-
-      } catch (error) {
-        logger.error(`Error sending message:`, error);
-        socket.emit('error', { message: 'Gagal mengirim pesan' });
+    socket.on('pesan:kirim', asyncSocketHandler(async (socket, data) => {
+      // Validasi event dan payload
+      const validation = validateSocketEvent('send-message', data, socket);
+      if (!validation.valid) {
+        throw new ValidationError(validation.error);
       }
-    });
+
+      const { ruangId, pesan, tipe = 'teks', mention = [], balasKe = null } = data;
+
+      // Validate room membership
+      if (!socket.rooms.has(ruangId)) {
+        throw new AuthorizationError('Belum bergabung dengan ruang chat');
+      }
+
+      const messageData = {
+        pesanId: `msg_${Date.now()}_${socket.userId}`,
+        ruangId,
+        pengirimId: socket.userId,
+        namaPengirim: socket.userData.nama,
+        pesan,
+        timestamp: new Date().toISOString(),
+        tipe,
+        mention,
+        balasKe
+      };
+
+      // Emit to room
+      chat.to(ruangId).emit('pesan:baru', messageData);
+
+      // If message mentions AI, trigger AI response
+      if (mention.includes('ai_assistant') || pesan.toLowerCase().includes('ai')) {
+        setTimeout(() => {
+          emitAIResponse(chat, ruangId, messageData.pesanId, pesan);
+        }, 1000 + Math.random() * 2000); // Simulate AI thinking time
+      }
+
+      logger.debug(`Message sent in room ${ruangId} by user ${socket.userId}`);
+
+      return { success: true, messageId: messageData.pesanId };
+    }));
 
     // Handle typing indicator
     socket.on('pengguna:mengetik', (data) => {
@@ -1021,9 +1080,6 @@ function checkRateLimit(userId, eventType, limit = 10, windowMs = 60000) {
   }
 
   limitInfo.count++;
-  return true;
-}
-
   return true;
 }
 

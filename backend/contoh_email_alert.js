@@ -56,17 +56,19 @@ const contohDataAlert = {
 // Contoh penggunaan fungsi
 async function testKirimEmailAlert() {
   try {
-    console.log('Mengirim email alert server bermasalah...');
+    const { logger } = require('./src/utilitas/logger');
+    logger.info('Sending email alert for problematic server...');
 
     const hasil = await kirimEmailAlertServer(
       contohDataAlert.user.email,
       contohDataAlert
     );
 
-    console.log('Email berhasil dikirim:', hasil);
+    logger.info('Email alert sent successfully', { result: hasil });
 
   } catch (error) {
-    console.error('Gagal mengirim email:', error.message);
+    const { logger } = require('./src/utilitas/logger');
+    logger.error('Failed to send email alert', { error: error.message });
   }
 }
 

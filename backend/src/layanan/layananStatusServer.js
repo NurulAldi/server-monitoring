@@ -8,7 +8,7 @@ const {
   STATUS_LEVELS
 } = require('../utilitas/statusServer');
 const Server = require('../model/Server');
-const logger = require('../utilitas/logger');
+const { logger } = require('../utilitas/logger');
 
 // Import Socket.IO untuk real-time updates
 let io = null;

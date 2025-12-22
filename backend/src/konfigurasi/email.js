@@ -476,7 +476,7 @@ async function kirimEmailAlert(penerima, subjek, data) {
       from: EMAIL_DEFAULT.from,
       to: Array.isArray(penerima) ? penerima.join(', ') : penerima,
       subject: `${EMAIL_DEFAULT.subjectPrefix} ${subjek}`,
-      html: templateEmailAlert(data),
+      html: templateEmailAlertServerBermasalah(data),
       replyTo: EMAIL_DEFAULT.replyTo
     };
 
@@ -518,7 +518,9 @@ module.exports = {
   dapatkanTransporter,
   kirimEmailAlert,
   testKoneksiEmail,
-  templateEmailAlert,
+  templateEmailAlertServerBermasalah,
+  // Backwards-compatible alias
+  templateEmailAlert: templateEmailAlertServerBermasalah,
   EMAIL_DEFAULT,
   SMTP_CONFIG
 };

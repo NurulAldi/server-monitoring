@@ -1,23 +1,21 @@
 // Shared AI Service Layer untuk Sistem Monitoring Server
 // Menyediakan komponen bersama untuk AI Chatbot dan AI Rekomendasi Email
 
-const { logger } = require('../utilitas/logger');
-const { OpenAI } = require('openai');
+const { logger, logAIInteraction } = require('../utilitas/logger');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Inisialisasi OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Inisialisasi Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
  * Shared AI Engine Core
- * Titik entry tunggal untuk semua interaksi OpenAI API
+ * Titik entry tunggal untuk semua interaksi Gemini API
  */
 class SharedAIEngine {
   constructor() {
-    this.client = openai;
+    this.client = genAI;
     this.defaultConfig = {
-      model: "gpt-3.5-turbo",
+      model: "gemini-1.5-flash",
       temperature: 0.3,
       max_tokens: 1000,
       timeout: 30000
@@ -27,37 +25,84 @@ class SharedAIEngine {
   /**
    * Execute AI completion dengan konfigurasi yang konsisten
    */
-  async executeCompletion(messages, config = {}) {
+  async executeCompletion(messages, config = {}, userId = null, sessionId = null, interactionType = 'chat') {
+    const startTime = Date.now();
+
     try {
       const completionConfig = {
         ...this.defaultConfig,
-        ...config,
-        messages
+        ...config
       };
 
+      // Convert messages to Gemini format (simple prompt for now)
+      const prompt = messages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+
       logger.debug('Executing AI completion', {
-        messageCount: messages.length,
+        promptLength: prompt.length,
         model: completionConfig.model,
         temperature: completionConfig.temperature
       });
 
-      const completion = await this.client.chat.completions.create(completionConfig);
+      const model = this.client.getGenerativeModel({ 
+        model: completionConfig.model,
+        generationConfig: {
+          temperature: completionConfig.temperature,
+          maxOutputTokens: completionConfig.max_tokens
+        }
+      });
 
-      const response = completion.choices[0].message.content;
-      const usage = completion.usage;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const responseText = response.text();
+
+      const responseTime = Date.now() - startTime;
 
       logger.debug('AI completion successful', {
-        responseLength: response.length,
-        tokensUsed: usage?.total_tokens
+        responseLength: responseText.length
+      });
+
+      // Log successful AI interaction
+      logAIInteraction(userId || 'system', {
+        sessionId,
+        provider: 'gemini',
+        model: completionConfig.model,
+        interactionType,
+        inputTokens: 0, // Gemini doesn't provide token counts easily
+        outputTokens: 0,
+        totalTokens: 0,
+        responseTime,
+        userQuery: messages[messages.length - 1]?.content || '',
+        aiResponse: responseText,
+        confidence: 0.9, // Default confidence
+        feedback: null
       });
 
       return {
-        response,
-        usage,
+        response: responseText,
+        usage: null, // Gemini doesn't provide detailed usage
         model: completionConfig.model
       };
 
     } catch (error) {
+      const responseTime = Date.now() - startTime;
+
+      // Log failed AI interaction
+      logAIInteraction(userId || 'system', {
+        sessionId,
+        provider: 'gemini',
+        model: config.model || this.defaultConfig.model,
+        interactionType,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        responseTime,
+        userQuery: messages[messages.length - 1]?.content || '',
+        aiResponse: '',
+        confidence: 0,
+        feedback: null,
+        error: error.message
+      });
+
       logger.logError('AI_COMPLETION_ERROR', error, {
         messageCount: messages.length,
         config: { ...config, messages: undefined } // Exclude messages for security

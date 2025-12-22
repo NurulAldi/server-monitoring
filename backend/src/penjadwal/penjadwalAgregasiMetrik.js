@@ -2,7 +2,7 @@
 // Scheduler untuk menjalankan tugas agregasi secara periodik
 
 const layananAgregasiMetrik = require('../layanan/layananAgregasiMetrik');
-const logger = require('../utilitas/logger');
+const { logger } = require('../utilitas/logger');
 
 class PenjadwalAgregasiMetrik {
   constructor() {
