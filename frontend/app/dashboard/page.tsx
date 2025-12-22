@@ -5,7 +5,6 @@ import DaftarServer from '@/komponen/pemantauan/DaftarServer'
 import DaftarAlertAktif from '@/komponen/peringatan/DaftarAlertAktif'
 import { Card, CardHeader, CardTitle, CardBody } from '@/komponen/umum/Card'
 import { Container } from '@/komponen/umum/Container'
-import ChatbotAI from '@/komponen/umum/ChatbotAI'
 
 // Point 1: SSR Isolation - Dynamic imports with ssr: false
 const ChartCPU = dynamic(() => import('@/komponen/bagan/ChartCPU'), { ssr: false })
@@ -168,23 +167,6 @@ export default function HalamanDashboard() {
             </Card>
           </div>
         </div>
-
-        {/* AI Assistant Chatbot */}
-          <div className="mt-8">
-            <div className="card">
-              <div className="card-header">
-                <h2 className="text-heading text-text-primary">
-                  AI Assistant
-                </h2>
-                <p className="text-body-small text-text-secondary">
-                  Tanyakan tentang kesehatan server atau analisis data
-                </p>
-              </div>
-              <div className="card-body">
-                <ChatbotAI className="h-96" />
-              </div>
-            </div>
-          </div>
         </Container>
     </div>
   )
