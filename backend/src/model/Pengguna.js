@@ -56,16 +56,7 @@ const penggunaSchema = new mongoose.Schema({
     select: false // Jangan include password di query default
   },
 
-  // Status dan role
-  peran: {
-    type: String,
-    enum: {
-      values: ['user', 'admin'],
-      message: 'Peran tidak valid'
-    },
-    default: 'user'
-  },
-
+  // Status
   statusAktif: {
     type: Boolean,
     default: true

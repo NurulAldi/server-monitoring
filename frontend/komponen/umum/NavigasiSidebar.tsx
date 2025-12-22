@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   MessageSquare,
   Settings,
-  Users,
   LogOut,
   Activity,
 } from 'lucide-react'
@@ -43,24 +42,9 @@ const menuItems = [
   },
 ]
 
-const menuAdmin = [
-  {
-    label: 'Kelola Pengguna',
-    href: '/admin/pengguna',
-    icon: Users,
-  },
-  {
-    label: 'Kelola Server',
-    href: '/admin/server',
-    icon: Server,
-  },
-]
-
 export default function NavigasiSidebar() {
   const pathname = usePathname()
-  const { logout, pengguna } = useAutentikasi()
-
-  const isAdmin = pengguna?.peran === 'admin'
+  const { logout } = useAutentikasi()
 
   return (
     <div className="bg-bg-secondary border-r border-bg-border w-64 min-h-screen flex flex-col">
@@ -96,44 +80,10 @@ export default function NavigasiSidebar() {
               </li>
             )
           })}
-
-          {isAdmin && (
-            <>
-              <li className="pt-6">
-                <div className="px-4 py-2">
-                  <h3 className="text-data-label text-accent-secondary">
-                    Admin Panel
-                  </h3>
-                </div>
-              </li>
-              {menuAdmin.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href
-
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={cn('nav-item', isActive && 'active')}
-                    >
-                      <Icon className="w-5 h-5" />
-                      {item.label}
-                    </Link>
-                  </li>
-                )
-              })}
-            </>
-          )}
         </ul>
       </nav>
 
       <div className="p-4 border-t border-bg-border">
-        <div className="mb-4">
-          <p className="text-body-small text-text-secondary">
-            Masuk sebagai: <span className="text-text-primary font-medium">{pengguna?.nama}</span>
-          </p>
-          <p className="text-body-small text-text-muted">{pengguna?.email}</p>
-        </div>
         <button
           onClick={logout}
           className="nav-item w-full justify-start hover:bg-status-critical/10 hover:text-status-critical"

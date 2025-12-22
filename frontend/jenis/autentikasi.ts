@@ -2,9 +2,7 @@
 export interface Pengguna {
   id: string
   nama: string
-  email: string
-  jabatan: string
-  role: 'admin' | 'operator' | 'viewer'
+  email: string // Used for SMTP notification system
   avatar?: string
   terakhirLogin?: string
   status: 'aktif' | 'nonaktif'

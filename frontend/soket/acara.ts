@@ -35,11 +35,6 @@ export const ACARA_SOKET = {
   // Notification events
   NOTIFIKASI_BARU: 'notifikasi:baru',
   NOTIFIKASI_BACA: 'notifikasi:baca',
-
-  // Admin events
-  ADMIN_USER_UPDATE: 'admin:user:update',
-  ADMIN_SERVER_UPDATE: 'admin:server:update',
-  ADMIN_CONFIG_UPDATE: 'admin:config:update',
 } as const
 
 // Type untuk event data

@@ -1,13 +1,9 @@
-import { Navigation } from '@/komponen/umum/Navigation'
-import { HeroSection } from '@/komponen/umum/HeroSection'
-import { Card, CardHeader, CardTitle, CardBody } from '@/komponen/umum/Card'
-import { Tombol } from '@/komponen/umum/Tombol'
-import Link from 'next/link'
+import { redirect } from 'next/navigation'
 
 export default function HomePage() {
-  return (
-    <div className="min-h-screen bg-pure-black">
-      <Navigation />
+  // Redirect root URL to login
+  redirect('/autentikasi')
+}
 
       {/* Hero Section */}
       <HeroSection

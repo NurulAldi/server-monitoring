@@ -40,14 +40,6 @@ const STATUS_SERVER = {
   MAINTENANCE: 'maintenance'
 };
 
-// Role pengguna
-const PERAN_PENGGUNA = {
-  SUPERADMIN: 'superadmin',
-  ADMIN: 'admin',
-  USER: 'user',
-  RESEARCHER: 'researcher'
-};
-
 // Status aktif pengguna
 const STATUS_AKTIF = {
   AKTIF: true,

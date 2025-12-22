@@ -187,27 +187,6 @@ function cekUser(req, res, next) {
     });
   }
 
-  // Cek apakah user memiliki role yang valid
-  const validRoles = [PERAN_PENGGUNA.USER, PERAN_PENGGUNA.ADMIN];
-  if (!validRoles.includes(req.user.peran)) {
-    logger.logUserActivity(req.user.id, 'INVALID_ROLE_ACCESS', {
-      endpoint: req.url,
-      method: req.method,
-      ip: req.ip,
-      userRole: req.user.peran,
-      validRoles: validRoles
-    });
-
-    return res.status(HTTP_STATUS.FORBIDDEN).json({
-      success: false,
-      error: {
-        code: ERROR_CODE.FORBIDDEN,
-        message: 'Role pengguna tidak valid.',
-        timestamp: new Date().toISOString()
-      }
-    });
-  }
-
   // User valid, lanjut
   next();
 }
@@ -229,16 +208,14 @@ function cekOwnership(resourceOwnerId) {
 
     // Cek apakah user adalah owner dari resource
     const isOwner = req.user.id === resourceOwnerId;
-    const isAdmin = req.user.peran === PERAN_PENGGUNA.ADMIN;
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner) {
       logger.logUserActivity(req.user.id, 'OWNERSHIP_ACCESS_DENIED', {
         endpoint: req.url,
         method: req.method,
         ip: req.ip,
         resourceOwnerId: resourceOwnerId,
-        isOwner: isOwner,
-        isAdmin: isAdmin
+        isOwner: isOwner
       });
 
       return res.status(HTTP_STATUS.FORBIDDEN).json({
@@ -251,7 +228,7 @@ function cekOwnership(resourceOwnerId) {
       });
     }
 
-    // User adalah owner atau admin, lanjut
+    // User adalah owner, lanjut
     next();
   };
 }
@@ -266,8 +243,7 @@ function autentikasiOpsional(req, res, next) {
       const decoded = verifyToken(token);
       req.user = {
         id: decoded.id,
-        email: decoded.email,
-        peran: decoded.peran
+        email: decoded.email
       };
     } else {
       // Tidak ada token, set user ke null

@@ -49,6 +49,5 @@ export const KONSTANTA = {
     OBROLAN: '/dashboard/obrolan',
     PENGATURAN: '/dashboard/pengaturan',
     AUTENTIKASI: '/autentikasi',
-    ADMIN: '/admin',
   },
 } as const

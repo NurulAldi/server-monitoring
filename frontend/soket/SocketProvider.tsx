@@ -68,11 +68,6 @@ export function SocketProvider({ children }: SocketProviderProps) {
       if (user?.id) {
         newSocket.emit('join:user', user.id)
       }
-
-      // Join role-based room
-      if (user?.role) {
-        newSocket.emit('join:role', user.role)
-      }
     })
 
     newSocket.on('disconnect', (reason) => {
@@ -116,7 +111,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
       setSocket(null)
       setIsConnected(false)
     }
-  }, [isAuthenticated, token, user?.id, user?.role])
+  }, [isAuthenticated, token, user?.id])
 
   // Socket methods
   const joinRoom = (room: string) => {

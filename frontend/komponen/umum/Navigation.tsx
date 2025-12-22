@@ -13,8 +13,6 @@ interface NavLink {
 
 const navLinks: NavLink[] = [
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/admin', label: 'Admin' },
-  { href: '/autentikasi', label: 'Login' },
 ]
 
 export function Navigation() {
