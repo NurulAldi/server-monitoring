@@ -34,10 +34,10 @@ export default function TabelPengguna() {
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-neutral-700">
+        <thead className="bg-neutral-800">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-data-label font-medium text-neutral-500 uppercase tracking-wider">
               Nama
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -57,24 +57,24 @@ export default function TabelPengguna() {
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-deep-grey divide-y divide-neutral-700">
           {dataPengguna.map((pengguna) => (
             <tr key={pengguna.id}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-body font-medium text-high-contrast">
                 {pengguna.nama}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-body-sm text-neutral-400">
                 {pengguna.email}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-body-sm text-neutral-400">
                 {pengguna.jabatan}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    pengguna.status === 'aktif'
-                      ? 'text-green-600 bg-green-100'
-                      : 'text-red-600 bg-red-100'
+                  className={`inline-flex items-center px-3 py-1 rounded-pill text-xs font-medium ${
+                    pengguna.aktif
+                      ? 'text-status-online bg-status-online/10'
+                      : 'text-accent-red bg-accent-red/10'
                   }`}
                 >
                   {pengguna.status.toUpperCase()}

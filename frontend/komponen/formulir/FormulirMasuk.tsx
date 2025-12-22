@@ -42,59 +42,59 @@ export default function FormulirMasuk() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div>
-        <Label htmlFor="email">Email</Label>
+      <div className="space-y-2">
+        <Label htmlFor="email" required>Email</Label>
         <Input
           id="email"
           type="email"
           placeholder="nama@email.com"
+          error={!!errors.email}
           {...register('email')}
-          className="mt-1"
         />
         {errors.email && (
-          <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+          <p className="text-body-sm text-accent-red mt-2">{errors.email.message}</p>
         )}
       </div>
 
-      <div>
-        <Label htmlFor="kataSandi">Kata Sandi</Label>
+      <div className="space-y-2">
+        <Label htmlFor="kataSandi" required>Kata Sandi</Label>
         <Input
           id="kataSandi"
           type="password"
           placeholder="Masukkan kata sandi"
+          error={!!errors.kataSandi}
           {...register('kataSandi')}
-          className="mt-1"
         />
         {errors.kataSandi && (
-          <p className="mt-1 text-sm text-red-600">{errors.kataSandi.message}</p>
+          <p className="text-body-sm text-accent-red mt-2">{errors.kataSandi.message}</p>
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm">
-          <Link
-            href="/autentikasi/lupa-kata-sandi"
-            className="font-medium text-primary hover:text-primary/80"
-          >
-            Lupa kata sandi?
-          </Link>
-        </div>
+      <div className="flex items-center justify-end">
+        <Link
+          href="/autentikasi/lupa-kata-sandi"
+          className="text-body-sm text-neutral-400 hover:text-high-contrast transition-smooth"
+        >
+          Lupa kata sandi?
+        </Link>
       </div>
 
       <Tombol
         type="submit"
+        variant="primary"
+        size="lg"
         className="w-full"
         disabled={sedangMemuat}
       >
         {sedangMemuat ? 'Sedang Masuk...' : 'Masuk'}
       </Tombol>
 
-      <div className="text-center">
-        <p className="text-sm text-gray-600">
+      <div className="text-center pt-4 border-t border-neutral-700">
+        <p className="text-body text-neutral-400">
           Belum punya akun?{' '}
           <Link
             href="/autentikasi/registrasi"
-            className="font-medium text-primary hover:text-primary/80"
+            className="text-high-contrast hover:text-soft-white font-medium transition-smooth"
           >
             Daftar sekarang
           </Link>

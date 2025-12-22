@@ -59,7 +59,7 @@ export default function FormulirLupaKataSandi() {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mt-2">
+          <h3 className="text-heading-md font-medium text-high-contrast mt-2">
             Email Terkirim!
           </h3>
           <p className="text-sm text-gray-600 mt-1">

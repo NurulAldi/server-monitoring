@@ -30,9 +30,9 @@ export default function RingkasanAdmin() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg shadow p-6 animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+          <div key={i} className="bg-deep-grey rounded-2xl border border-neutral-700 p-6 animate-pulse">
+            <div className="h-4 bg-neutral-700 rounded w-3/4 mb-2"></div>
+            <div className="h-8 bg-neutral-700 rounded w-1/2"></div>
           </div>
         ))}
       </div>
@@ -44,29 +44,29 @@ export default function RingkasanAdmin() {
       label: 'Total Pengguna',
       nilai: statistik?.totalPengguna || 0,
       ikon: Users,
-      warna: 'text-blue-600',
-      bgWarna: 'bg-blue-50',
+      warna: 'text-accent-blue',
+      bgWarna: 'bg-accent-blue/10',
     },
     {
       label: 'Total Server',
       nilai: statistik?.totalServer || 0,
       ikon: Server,
-      warna: 'text-green-600',
-      bgWarna: 'bg-green-50',
+      warna: 'text-status-online',
+      bgWarna: 'bg-status-online/10',
     },
     {
       label: 'Alert Aktif',
       nilai: statistik?.totalAlertAktif || 0,
       ikon: AlertTriangle,
-      warna: 'text-red-600',
-      bgWarna: 'bg-red-50',
+      warna: 'text-accent-red',
+      bgWarna: 'bg-accent-red/10',
     },
     {
       label: 'Metrik Hari Ini',
       nilai: statistik?.totalMetrikHariIni || 0,
       ikon: Activity,
-      warna: 'text-purple-600',
-      bgWarna: 'bg-purple-50',
+      warna: 'text-warning-amber',
+      bgWarna: 'bg-warning-amber/10',
     },
   ]
 
@@ -75,14 +75,14 @@ export default function RingkasanAdmin() {
       {kartuStatistik.map((item) => {
         const Ikon = item.ikon
         return (
-          <div key={item.label} className="bg-white rounded-lg shadow p-6">
+          <div key={item.label} className="bg-deep-grey rounded-2xl border border-neutral-700 p-6">
             <div className="flex items-center">
               <div className={`p-3 rounded-lg ${item.bgWarna}`}>
                 <Ikon className={`h-6 w-6 ${item.warna}`} />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{item.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{item.nilai}</p>
+                <p className="text-body-sm font-medium text-neutral-400">{item.label}</p>
+                <p className="text-display-lg font-bold text-high-contrast">{item.nilai}</p>
               </div>
             </div>
           </div>

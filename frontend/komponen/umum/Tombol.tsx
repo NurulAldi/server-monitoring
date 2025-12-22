@@ -3,21 +3,22 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/utilitas/cn'
 
 const varianTombol = cva(
-  'btn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed',
+  'inline-flex items-center justify-center font-medium transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-pure-black disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed',
   {
     variants: {
       variant: {
-        primary: 'btn-primary',
-        secondary: 'btn-secondary',
-        ghost: 'btn-ghost',
-        danger: 'btn-danger',
-        outline: 'border border-bg-border hover:border-accent-primary hover:bg-bg-tertiary',
+        primary: 'bg-high-contrast text-pure-black hover:bg-soft-white active:scale-[0.98]',
+        secondary: 'bg-deep-grey text-high-contrast border border-neutral-700 hover:bg-neutral-800 hover:border-neutral-600 active:scale-[0.98]',
+        ghost: 'bg-transparent text-high-contrast hover:bg-neutral-800 active:scale-[0.98]',
+        danger: 'bg-accent-red text-high-contrast hover:bg-opacity-90 active:scale-[0.98]',
+        outline: 'bg-transparent border border-neutral-600 text-high-contrast hover:border-high-contrast hover:bg-neutral-800 active:scale-[0.98]',
+        glass: 'glass text-high-contrast hover:bg-opacity-90 active:scale-[0.98]',
       },
       size: {
-        sm: 'text-xs px-3 py-1.5',
-        default: 'text-sm px-4 py-2',
-        lg: 'text-base px-6 py-3',
-        icon: 'p-2 w-10 h-10',
+        sm: 'text-body-sm px-4 py-2 rounded-pill',
+        default: 'text-body px-6 py-3 rounded-pill',
+        lg: 'text-body-lg px-8 py-4 rounded-pill',
+        icon: 'p-3 rounded-full',
       },
     },
     defaultVariants: {
@@ -44,4 +45,5 @@ const Tombol = forwardRef<HTMLButtonElement, PropsTombol>(
 )
 Tombol.displayName = 'Tombol'
 
-export { Tombol, varianTombol }
+// Backwards-compatible alias: some components import { Button } instead of { Tombol }
+export { Tombol as Button, Tombol, varianTombol }

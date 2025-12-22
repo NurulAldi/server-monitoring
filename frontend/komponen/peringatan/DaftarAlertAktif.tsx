@@ -37,13 +37,13 @@ export default function DaftarAlertAktif() {
   const getTingkatColor = (tingkat: string) => {
     switch (tingkat) {
       case 'kritis':
-        return 'text-red-600 bg-red-100'
-      case 'peringatan':
-        return 'text-yellow-600 bg-yellow-100'
-      case 'info':
-        return 'text-blue-600 bg-blue-100'
+        return 'text-accent-red bg-accent-red/10'
+      case 'Peringatan':
+        return 'text-warning-amber bg-warning-amber/10'
+      case 'Info':
+        return 'text-accent-blue bg-accent-blue/10'
       default:
-        return 'text-gray-600 bg-gray-100'
+        return 'text-neutral-400 bg-neutral-800'
     }
   }
 
@@ -60,7 +60,7 @@ export default function DaftarAlertAktif() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-heading-md font-medium text-high-contrast">
                       {alert.jenis}
                     </h3>
                     <p className="text-sm text-gray-500">

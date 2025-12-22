@@ -5,11 +5,15 @@ import { AutentikasiProvider } from '@/kait/AutentikasiProvider'
 import { SocketProvider } from '@/soket/SocketProvider'
 import ConnectionStatus from '@/komponen/umum/ConnectionStatus'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: 'Dashboard Monitoring Server',
-  description: 'Sistem monitoring kesehatan server real-time',
+  title: 'Server Monitor — Real-Time Infrastructure Insights',
+  description: 'Monitor your infrastructure with Tesla-inspired minimalism. Clean, powerful, and built for performance.',
 }
 
 export default function RootLayout({
@@ -18,11 +22,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="id">
+    <html lang="en" className="scroll-smooth">
       <body className={inter.className}>
         <AutentikasiProvider>
           <SocketProvider>
-            {children}
+            <main className="min-h-screen">
+              {children}
+            </main>
             <ConnectionStatus />
           </SocketProvider>
         </AutentikasiProvider>

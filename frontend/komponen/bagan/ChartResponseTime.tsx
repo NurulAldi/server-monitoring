@@ -127,10 +127,10 @@ export function ChartResponseTime({
   }
 
   const getResponseTimeColor = (value: number) => {
-    if (value >= 3000) return 'var(--status-critical)'
-    if (value >= 1000) return 'var(--status-warning)'
-    if (value >= 500) return 'var(--accent-secondary)'
-    return 'var(--status-online)'
+    if (value >= 3000) return '#e31937'
+    if (value >= 1000) return '#f7c948'
+    if (value >= 500) return '#f7c948'
+    return '#00d448'
   }
 
   return (
@@ -160,7 +160,7 @@ export function ChartResponseTime({
           <ScatterChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="var(--data-grid)"
+              stroke="#393c41"
               opacity={0.3}
             />
 
@@ -168,10 +168,10 @@ export function ChartResponseTime({
               type="number"
               dataKey="timestamp"
               domain={['dataMin', 'dataMax']}
-              stroke="var(--text-secondary)"
+              stroke="#8a8d91"
               fontSize={11}
-              tick={{ fill: 'var(--text-secondary)' }}
-              axisLine={{ stroke: 'var(--bg-border)' }}
+              tick={{ fill: '#8a8d91' }}
+              axisLine={{ stroke: '#393c41' }}
               tickFormatter={(value) => new Date(value).toLocaleTimeString('id-ID', {
                 hour: '2-digit',
                 minute: '2-digit'
@@ -181,10 +181,10 @@ export function ChartResponseTime({
             <YAxis
               type="number"
               dataKey="responseTime"
-              stroke="var(--text-secondary)"
+              stroke="#8a8d91"
               fontSize={11}
-              tick={{ fill: 'var(--text-secondary)' }}
-              axisLine={{ stroke: 'var(--bg-border)' }}
+              tick={{ fill: '#8a8d91' }}
+              axisLine={{ stroke: '#393c41' }}
               label={{ value: 'Response Time (ms)', angle: -90, position: 'insideLeft' }}
               domain={[0, maxResponseTime]}
             />
@@ -197,10 +197,10 @@ export function ChartResponseTime({
 
             <Tooltip
               contentStyle={{
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--bg-border)',
+                background: '#171a20',
+                border: '1px solid #393c41',
                 borderRadius: '6px',
-                color: 'var(--text-primary)'
+                color: '#eeeeee'
               }}
               formatter={(value: number, name: string) => {
                 if (name === 'responseTime') return [formatResponseTime(value), 'Response Time']
@@ -213,21 +213,21 @@ export function ChartResponseTime({
             {/* Threshold lines */}
             <ReferenceLine
               y={3000}
-              stroke="var(--status-critical)"
+              stroke="#e31937"
               strokeDasharray="5 5"
-              label={{ value: "Critical", position: "topRight", fill: "var(--status-critical)" }}
+              label={{ value: "Critical", position: "topRight", fill: "#e31937" }}
             />
             <ReferenceLine
               y={1000}
-              stroke="var(--status-warning)"
+              stroke="#f7c948"
               strokeDasharray="5 5"
-              label={{ value: "Warning", position: "topRight", fill: "var(--status-warning)" }}
+              label={{ value: "Warning", position: "topRight", fill: "#f7c948" }}
             />
             <ReferenceLine
               y={500}
-              stroke="var(--accent-secondary)"
+              stroke="#f7c948"
               strokeDasharray="5 5"
-              label={{ value: "Slow", position: "topRight", fill: "var(--accent-secondary)" }}
+              label={{ value: "Slow", position: "topRight", fill: "#f7c948" }}
             />
 
             <Scatter
@@ -240,33 +240,33 @@ export function ChartResponseTime({
           <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="var(--data-grid)"
+              stroke="#393c41"
               opacity={0.3}
             />
 
             <XAxis
               dataKey="waktu"
-              stroke="var(--text-secondary)"
+              stroke="#8a8d91"
               fontSize={11}
-              tick={{ fill: 'var(--text-secondary)' }}
-              axisLine={{ stroke: 'var(--bg-border)' }}
+              tick={{ fill: '#8a8d91' }}
+              axisLine={{ stroke: '#393c41' }}
             />
 
             <YAxis
-              stroke="var(--text-secondary)"
+              stroke="#8a8d91"
               fontSize={11}
-              tick={{ fill: 'var(--text-secondary)' }}
-              axisLine={{ stroke: 'var(--bg-border)' }}
+              tick={{ fill: '#8a8d91' }}
+              axisLine={{ stroke: '#393c41' }}
               label={{ value: 'Response Time (ms)', angle: -90, position: 'insideLeft' }}
               domain={[0, maxResponseTime]}
             />
 
             <Tooltip
               contentStyle={{
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--bg-border)',
+                background: '#171a20',
+                border: '1px solid #393c41',
                 borderRadius: '6px',
-                color: 'var(--text-primary)'
+                color: '#eeeeee'
               }}
               formatter={(value: number, name: string) => {
                 return [formatResponseTime(value), name]
@@ -276,27 +276,27 @@ export function ChartResponseTime({
             {/* Threshold lines */}
             <ReferenceLine
               y={3000}
-              stroke="var(--status-critical)"
+              stroke="#e31937"
               strokeDasharray="5 5"
-              label={{ value: "Critical", position: "topRight", fill: "var(--status-critical)" }}
+              label={{ value: "Critical", position: "topRight", fill: "#e31937" }}
             />
             <ReferenceLine
               y={1000}
-              stroke="var(--status-warning)"
+              stroke="#f7c948"
               strokeDasharray="5 5"
-              label={{ value: "Warning", position: "topRight", fill: "var(--status-warning)" }}
+              label={{ value: "Warning", position: "topRight", fill: "#f7c948" }}
             />
             <ReferenceLine
               y={500}
-              stroke="var(--accent-secondary)"
+              stroke="#f7c948"
               strokeDasharray="5 5"
-              label={{ value: "Slow", position: "topRight", fill: "var(--accent-secondary)" }}
+              label={{ value: "Slow", position: "topRight", fill: "#f7c948" }}
             />
 
             <Line
               type="monotone"
               dataKey="responseTime"
-              stroke="#00FF88"
+              stroke="#00d448"
               strokeWidth={2}
               name="Response Time"
               dot={false}
@@ -309,7 +309,7 @@ export function ChartResponseTime({
                 type="monotone"
                 data={trendData}
                 dataKey="trend"
-                stroke="#FF6B00"
+                stroke="#f7c948"
                 strokeWidth={1}
                 strokeDasharray="5 5"
                 name="Trend"

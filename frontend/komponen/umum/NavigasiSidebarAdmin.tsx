@@ -41,15 +41,15 @@ export default function NavigasiSidebarAdmin() {
   const { logout, pengguna } = useAutentikasi()
 
   return (
-    <div className="bg-white shadow-sm border-r border-gray-200 w-64 min-h-screen">
+    <div className="bg-pure-black border-r border-neutral-700 w-64 min-h-screen glass">
       <div className="p-6">
         <div className="flex items-center">
-          <Shield className="h-8 w-8 text-indigo-600 mr-3" />
+          <Shield className="h-8 w-8 text-accent-blue mr-3" />
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-display-md font-semibold text-high-contrast">
               Admin Panel
             </h2>
-            <p className="text-sm text-gray-600">Monitoring Server</p>
+            <p className="text-body-sm text-neutral-500">Monitoring Server</p>
           </div>
         </div>
       </div>
@@ -65,10 +65,10 @@ export default function NavigasiSidebarAdmin() {
                 <Link
                   href={item.href}
                   className={cn(
-                    'flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors',
+                    'flex items-center px-4 py-3 text-body font-medium rounded-pill transition-smooth',
                     isActive
-                      ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-accent-blue/10 text-accent-blue border-r-4 border-accent-blue'
+                      : 'text-neutral-400 hover:bg-neutral-800 hover:text-high-contrast'
                   )}
                 >
                   <Icon className="mr-3 h-5 w-5" />
@@ -80,23 +80,23 @@ export default function NavigasiSidebarAdmin() {
         </ul>
       </nav>
 
-      <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
+      <div className="absolute bottom-0 w-64 p-4 border-t border-neutral-700">
         <div className="mb-4">
-          <p className="text-sm text-gray-600">
-            Masuk sebagai: <span className="font-medium">{pengguna?.nama}</span>
+          <p className="text-body-sm text-neutral-400">
+            Masuk sebagai: <span className="font-medium text-high-contrast">{pengguna?.nama}</span>
           </p>
-          <p className="text-xs text-gray-500">{pengguna?.email}</p>
+          <p className="text-body-sm text-neutral-500">{pengguna?.email}</p>
         </div>
         <div className="space-y-2">
           <Link
             href="/dashboard"
-            className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            className="flex items-center w-full px-4 py-2.5 text-body font-medium text-neutral-400 rounded-pill hover:bg-neutral-800 hover:text-high-contrast transition-smooth"
           >
             Kembali ke Dashboard
           </Link>
           <button
             onClick={logout}
-            className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            className="flex items-center w-full px-4 py-2.5 text-body font-medium text-neutral-400 rounded-pill hover:bg-neutral-800 hover:text-high-contrast transition-smooth"
           >
             <LogOut className="mr-3 h-5 w-5" />
             Keluar

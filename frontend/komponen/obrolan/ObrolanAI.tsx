@@ -77,16 +77,16 @@ export default function ObrolanAI() {
             }`}
           >
             <div
-              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl backdrop-blur-sm ${
                 msg.pengirim === 'user'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-900'
+                  ? 'bg-accent-blue text-high-contrast'
+                  : 'bg-neutral-800/80 text-high-contrast border border-neutral-700'
               }`}
             >
-              <p className="text-sm">{msg.isi}</p>
+              <p className="text-body">{msg.isi}</p>
               <p
-                className={`text-xs mt-1 ${
-                  msg.pengirim === 'user' ? 'text-blue-100' : 'text-gray-500'
+                className={`text-data-label mt-1 ${
+                  msg.pengirim === 'user' ? 'text-neutral-200' : 'text-neutral-500'
                 }`}
               >
                 {msg.waktu}
@@ -97,11 +97,11 @@ export default function ObrolanAI() {
 
         {sedangMemuat && (
           <div className="flex justify-start">
-            <div className="bg-gray-200 text-gray-900 px-4 py-2 rounded-lg">
+            <div className="bg-neutral-800/80 backdrop-blur-sm text-high-contrast px-4 py-3 rounded-2xl border border-neutral-700">
               <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-accent-blue rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-accent-blue rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-accent-blue rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
             </div>
           </div>
@@ -109,7 +109,7 @@ export default function ObrolanAI() {
       </div>
 
       {/* Input Area */}
-      <div className="border-t p-4">
+      <div className="border-t border-neutral-700 p-4">
         <div className="flex space-x-2">
           <Input
             value={pesan}

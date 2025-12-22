@@ -134,33 +134,33 @@ export function ChartTemperature({
         <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="var(--data-grid)"
+            stroke="#393c41"
             opacity={0.3}
           />
 
           <XAxis
             dataKey="waktu"
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
           />
 
           <YAxis
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
             label={{ value: '°C', angle: -90, position: 'insideLeft' }}
             domain={[20, maxTemp + 10]}
           />
 
           <Tooltip
             contentStyle={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--bg-border)',
+              background: '#171a20',
+              border: '1px solid #393c41',
               borderRadius: '6px',
-              color: 'var(--text-primary)'
+              color: '#eeeeee'
             }}
             formatter={(value: number, name: string) => {
               return [formatTemp(value), name]
@@ -170,21 +170,21 @@ export function ChartTemperature({
           {/* Threshold lines */}
           <ReferenceLine
             y={maxTemp}
-            stroke="var(--status-critical)"
+            stroke="#e31937"
             strokeDasharray="5 5"
-            label={{ value: "Max Safe", position: "topRight", fill: "var(--status-critical)" }}
+            label={{ value: "Max Safe", position: "topRight", fill: "#e31937" }}
           />
           <ReferenceLine
             y={maxTemp * 0.85}
-            stroke="var(--status-warning)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={{ value: "Warning", position: "topRight", fill: "var(--status-warning)" }}
+            label={{ value: "Warning", position: "topRight", fill: "#f7c948" }}
           />
           <ReferenceLine
             y={maxTemp * 0.75}
-            stroke="var(--accent-secondary)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={{ value: "High", position: "topRight", fill: "var(--accent-secondary)" }}
+            label={{ value: "High", position: "topRight", fill: "#f7c948" }}
           />
 
           {/* Temperature areas */}
@@ -193,8 +193,8 @@ export function ChartTemperature({
               type="monotone"
               dataKey="ambient"
               stackId="1"
-              stroke="#9D4EDD"
-              fill="#9D4EDD"
+              stroke="#8a8d91"
+              fill="#8a8d91"
               fillOpacity={0.1}
               name="Ambient"
               animationDuration={300}
@@ -205,8 +205,8 @@ export function ChartTemperature({
             type="monotone"
             dataKey="disk"
             stackId="1"
-            stroke="#00D4FF"
-            fill="#00D4FF"
+            stroke="#3e6ae1"
+            fill="#3e6ae1"
             fillOpacity={0.2}
             name="Disk"
             animationDuration={300}
@@ -215,9 +215,8 @@ export function ChartTemperature({
           <Area
             type="monotone"
             dataKey="motherboard"
-            stackId="1"
-            stroke="#FF6B00"
-            fill="#FF6B00"
+            stroke="#f7c948"
+            fill="#f7c948"
             fillOpacity={0.3}
             name="Motherboard"
             animationDuration={300}
@@ -228,8 +227,8 @@ export function ChartTemperature({
               type="monotone"
               dataKey="gpu"
               stackId="1"
-              stroke="#FF0080"
-              fill="#FF0080"
+              stroke="#e31937"
+              fill="#e31937"
               fillOpacity={0.4}
               name="GPU"
               animationDuration={300}
@@ -240,8 +239,8 @@ export function ChartTemperature({
             type="monotone"
             dataKey="cpu"
             stackId="1"
-            stroke="#00FF88"
-            fill="#00FF88"
+            stroke="#00d448"
+            fill="#00d448"
             fillOpacity={0.5}
             name="CPU"
             animationDuration={300}

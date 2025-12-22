@@ -14,44 +14,44 @@ export default function LaporanMetrik() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-500 mb-2">Total Server</h4>
-          <p className="text-2xl font-bold text-gray-900">{dataLaporan.totalServer}</p>
+        <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
+          <h4 className="text-body-sm font-medium text-neutral-500 mb-2">Total Server</h4>
+          <p className="text-display-lg font-bold text-high-contrast">{dataLaporan.totalServer}</p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-500 mb-2">CPU Rata-rata (%)</h4>
-          <p className="text-2xl font-bold text-blue-600">{dataLaporan.rataRataCpu}%</p>
+        <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
+          <h4 className="text-body-sm font-medium text-neutral-500 mb-2">CPU Rata-rata (%)</h4>
+          <p className="text-display-lg font-bold text-accent-blue">{dataLaporan.rataRataCpu}%</p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-500 mb-2">Memori Rata-rata (%)</h4>
-          <p className="text-2xl font-bold text-green-600">{dataLaporan.rataRataMemori}%</p>
+        <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
+          <h4 className="text-body-sm font-medium text-neutral-500 mb-2">Memori Rata-rata (%)</h4>
+          <p className="text-display-lg font-bold text-status-online">{dataLaporan.rataRataMemori}%</p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-500 mb-2">Disk Rata-rata (%)</h4>
-          <p className="text-2xl font-bold text-yellow-600">{dataLaporan.rataRataDisk}%</p>
+        <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
+          <h4 className="text-body-sm font-medium text-neutral-500 mb-2">Disk Rata-rata (%)</h4>
+          <p className="text-display-lg font-bold text-warning-amber">{dataLaporan.rataRataDisk}%</p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-500 mb-2">Total Alert</h4>
-          <p className="text-2xl font-bold text-red-600">{dataLaporan.totalAlert}</p>
+        <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
+          <h4 className="text-body-sm font-medium text-neutral-500 mb-2">Total Alert</h4>
+          <p className="text-display-lg font-bold text-accent-red">{dataLaporan.totalAlert}</p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-500 mb-2">Uptime Rata-rata (%)</h4>
-          <p className="text-2xl font-bold text-green-600">{dataLaporan.uptimeRataRata}%</p>
+        <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
+          <h4 className="text-body-sm font-medium text-neutral-500 mb-2">Uptime Rata-rata (%)</h4>
+          <p className="text-display-lg font-bold text-status-online">{dataLaporan.uptimeRataRata}%</p>
         </div>
       </div>
 
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h4 className="text-lg font-medium text-gray-900 mb-4">Detail per Server</h4>
+      <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
+        <h4 className="text-heading-md font-medium text-high-contrast mb-4">Detail per Server</h4>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-white">
+            <thead className="bg-neutral-800">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Server</th>
+                <th className="px-6 py-3 text-left text-data-label font-medium text-neutral-400">Server</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">CPU Avg</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mem Avg</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Disk Avg</th>
@@ -59,7 +59,7 @@ export default function LaporanMetrik() {
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Alert</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-deep-grey divide-y divide-neutral-700">
               <tr>
                 <td className="px-4 py-2 text-sm">Web Server 1</td>
                 <td className="px-4 py-2 text-sm">45%</td>

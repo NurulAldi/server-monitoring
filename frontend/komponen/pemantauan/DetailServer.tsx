@@ -41,12 +41,12 @@ export default function DetailServer({ idServer }: PropsDetailServer) {
       <KontenKartu>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div>
-            <h4 className="text-sm font-medium text-gray-500 mb-2">Status</h4>
+            <h4 className="text-body-sm font-medium text-neutral-400 mb-2">Status</h4>
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 dataServer.status === 'online'
                   ? 'text-green-600 bg-green-100'
-                  : 'text-red-600 bg-red-100'
+                  : 'text-accent-red bg-accent-red/10'
               }`}
             >
               {dataServer.status.toUpperCase()}

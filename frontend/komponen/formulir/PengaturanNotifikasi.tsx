@@ -36,7 +36,7 @@ export default function PengaturanNotifikasi() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <h3 className="text-heading-md font-medium text-high-contrast mb-4">
           Metode Notifikasi
         </h3>
         <div className="space-y-3">

@@ -130,33 +130,33 @@ export function ChartLoad({
         <ChartComponent data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="var(--data-grid)"
+            stroke="#393c41"
             opacity={0.3}
           />
 
           <XAxis
             dataKey="waktu"
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
           />
 
           <YAxis
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
             label={{ value: 'Load', angle: -90, position: 'insideLeft' }}
             domain={[0, 'dataMax + 1']}
           />
 
           <Tooltip
             contentStyle={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--bg-border)',
+              background: '#171a20',
+              border: '1px solid #393c41',
               borderRadius: '6px',
-              color: 'var(--text-primary)'
+              color: '#eeeeee'
             }}
             formatter={(value: number, name: string) => {
               return [formatLoad(value), name]
@@ -164,27 +164,27 @@ export function ChartLoad({
           />
 
           <Legend
-            wrapperStyle={{ color: 'var(--text-secondary)' }}
+            wrapperStyle={{ color: '#8a8d91' }}
           />
 
           {/* Threshold lines */}
           <ReferenceLine
             y={cpuCount * 2}
-            stroke="var(--status-critical)"
+            stroke="#e31937"
             strokeDasharray="5 5"
-            label={{ value: "Critical", position: "topRight", fill: "var(--status-critical)" }}
+            label={{ value: "Critical", position: "topRight", fill: "#e31937" }}
           />
           <ReferenceLine
             y={cpuCount * 1.5}
-            stroke="var(--status-warning)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={{ value: "Warning", position: "topRight", fill: "var(--status-warning)" }}
+            label={{ value: "Warning", position: "topRight", fill: "#f7c948" }}
           />
           <ReferenceLine
             y={cpuCount}
-            stroke="var(--accent-secondary)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={{ value: "High", position: "topRight", fill: "var(--accent-secondary)" }}
+            label={{ value: "High", position: "topRight", fill: "#f7c948" }}
           />
 
           {/* Load lines */}
@@ -194,8 +194,8 @@ export function ChartLoad({
                 type="monotone"
                 dataKey="load15"
                 stackId="1"
-                stroke="#9D4EDD"
-                fill="#9D4EDD"
+                stroke="#8a8d91"
+                fill="#8a8d91"
                 fillOpacity={0.1}
                 name="15-min"
                 animationDuration={300}
@@ -204,8 +204,8 @@ export function ChartLoad({
                 type="monotone"
                 dataKey="load5"
                 stackId="1"
-                stroke="#00D4FF"
-                fill="#00D4FF"
+                stroke="#3e6ae1"
+                fill="#3e6ae1"
                 fillOpacity={0.2}
                 name="5-min"
                 animationDuration={300}
@@ -214,8 +214,8 @@ export function ChartLoad({
                 type="monotone"
                 dataKey="load1"
                 stackId="1"
-                stroke="#00FF88"
-                fill="#00FF88"
+                stroke="#00d448"
+                fill="#00d448"
                 fillOpacity={0.3}
                 name="1-min"
                 animationDuration={300}
@@ -226,7 +226,7 @@ export function ChartLoad({
               <Line
                 type="monotone"
                 dataKey="load1"
-                stroke="#00FF88"
+                stroke="#00d448"
                 strokeWidth={3}
                 name="1-min"
                 dot={false}
@@ -235,7 +235,7 @@ export function ChartLoad({
               <Line
                 type="monotone"
                 dataKey="load5"
-                stroke="#00D4FF"
+                stroke="#3e6ae1"
                 strokeWidth={2}
                 name="5-min"
                 dot={false}
@@ -244,7 +244,7 @@ export function ChartLoad({
               <Line
                 type="monotone"
                 dataKey="load15"
-                stroke="#9D4EDD"
+                stroke="#8a8d91"
                 strokeWidth={1}
                 strokeDasharray="5 5"
                 name="15-min"

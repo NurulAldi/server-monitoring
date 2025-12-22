@@ -169,33 +169,33 @@ export function ChartConnections({
         <ChartComponent data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="var(--data-grid)"
+            stroke="#393c41"
             opacity={0.3}
           />
 
           <XAxis
             dataKey="waktu"
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
           />
 
           <YAxis
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
             label={{ value: 'Connections', angle: -90, position: 'insideLeft' }}
             domain={[0, maxConnections]}
           />
 
           <Tooltip
             contentStyle={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--bg-border)',
+              background: '#171a20',
+              border: '1px solid #393c41',
               borderRadius: '6px',
-              color: 'var(--text-primary)'
+              color: '#eeeeee'
             }}
             formatter={(value: number, name: string) => {
               if (name === 'activeConnections') return [formatConnections(value), 'Active']
@@ -209,21 +209,21 @@ export function ChartConnections({
           {/* Threshold lines */}
           <ReferenceLine
             y={maxConnections * 0.95}
-            stroke="var(--status-critical)"
+            stroke="#e31937"
             strokeDasharray="5 5"
-            label={{ value: "Critical", position: "topRight", fill: "var(--status-critical)" }}
+            label={{ value: "Critical", position: "topRight", fill: "#e31937" }}
           />
           <ReferenceLine
             y={maxConnections * 0.8}
-            stroke="var(--status-warning)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={{ value: "Warning", position: "topRight", fill: "var(--status-warning)" }}
+            label={{ value: "Warning", position: "topRight", fill: "#f7c948" }}
           />
           <ReferenceLine
             y={maxConnections * 0.6}
-            stroke="var(--accent-secondary)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={{ value: "High", position: "topRight", fill: "var(--accent-secondary)" }}
+            label={{ value: "High", position: "topRight", fill: "#f7c948" }}
           />
 
           {/* Connection lines */}
@@ -231,8 +231,8 @@ export function ChartConnections({
             <Area
               type="monotone"
               dataKey="activeConnections"
-              stroke="#00FF88"
-              fill="#00FF88"
+              stroke="#00d448"
+              fill="#00d448"
               fillOpacity={0.3}
               name="activeConnections"
               animationDuration={300}
@@ -241,7 +241,7 @@ export function ChartConnections({
             <Line
               type="monotone"
               dataKey="activeConnections"
-              stroke="#00FF88"
+              stroke="#00d448"
               strokeWidth={3}
               name="Active Connections"
               dot={false}
@@ -255,7 +255,7 @@ export function ChartConnections({
               <Line
                 type="monotone"
                 dataKey="newConnections"
-                stroke="#00D4FF"
+                stroke="#3e6ae1"
                 strokeWidth={1}
                 strokeDasharray="5 5"
                 name="New Connections"
@@ -265,7 +265,7 @@ export function ChartConnections({
               <Line
                 type="monotone"
                 dataKey="closedConnections"
-                stroke="#FF6B00"
+                stroke="#f7c948"
                 strokeWidth={1}
                 strokeDasharray="5 5"
                 name="Closed Connections"

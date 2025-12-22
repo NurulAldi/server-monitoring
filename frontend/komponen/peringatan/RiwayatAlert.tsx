@@ -47,7 +47,7 @@ export default function RiwayatAlert({ idAlert }: PropsRiwayatAlert) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-body-sm font-medium text-high-contrast">
                     {riwayat.aksi}
                   </p>
                   <p className="text-sm text-gray-500">{riwayat.waktu}</p>

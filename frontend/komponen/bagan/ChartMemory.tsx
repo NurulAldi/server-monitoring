@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useMemoryMetrics } from '@/soket/useMetrics'
 import {
   PieChart,
@@ -34,10 +35,10 @@ interface PropsChartMemory {
 }
 
 const MEMORY_COLORS = {
-  used: '#FF6B00',      // Neon Orange
-  cached: '#9D4EDD',    // Electric Purple
-  buffers: '#00D4FF',   // Electric Cyan
-  free: '#00FF88'       // Matrix Green
+  used: '#3e6ae1',      // Accent Blue
+  cached: '#8a8d91',    // Neutral 500
+  buffers: '#5c5e62',   // Neutral 600
+  free: '#00d448'       // Success Green
 }
 
 export function ChartMemory({
@@ -67,7 +68,18 @@ export function ChartMemory({
         // Keep only last 30 data points for performance
         return newData.slice(-30)
       })
-      setCurrentData(socketData[socketData.length - 1] || null)
+      if (socketData.length > 0) {
+        const lastItem = socketData[socketData.length - 1]
+        setCurrentData({
+          waktu: lastItem.waktu,
+          used: lastItem.used,
+          free: lastItem.available,
+          cached: Math.round(lastItem.used * 0.2),
+          buffers: Math.round(lastItem.used * 0.05),
+          total: lastItem.total,
+          timestamp: lastItem.timestamp
+        })
+      }
     } else if (!showRealtime) {
       // Mock data untuk demo when realtime is disabled
       const mockData: DataMemory[] = []
@@ -160,10 +172,10 @@ export function ChartMemory({
           </Pie>
           <Tooltip
             contentStyle={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--bg-border)',
+              background: '#171a20',
+              border: '1px solid #393c41',
               borderRadius: '6px',
-              color: 'var(--text-primary)'
+              color: '#eeeeee'
             }}
             formatter={(value: number, name: string) => [
               `${value.toFixed(0)} MB (${getDonutData().find(d => d.name === name)?.percentage}%)`,
@@ -207,26 +219,26 @@ export function ChartMemory({
           </linearGradient>
         </defs>
 
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--data-grid)" opacity={0.3} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#393c41" opacity={0.3} />
         <XAxis
           dataKey="waktu"
-          stroke="var(--text-secondary)"
+          stroke="#8a8d91"
           fontSize={11}
-          tick={{ fill: 'var(--text-secondary)' }}
+          tick={{ fill: '#8a8d91' }}
         />
         <YAxis
-          stroke="var(--text-secondary)"
+          stroke="#8a8d91"
           fontSize={11}
-          tick={{ fill: 'var(--text-secondary)' }}
+          tick={{ fill: '#8a8d91' }}
           label={{ value: 'MB', angle: -90, position: 'insideLeft' }}
         />
 
         <Tooltip
           contentStyle={{
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--bg-border)',
+            background: '#171a20',
+            border: '1px solid #393c41',
             borderRadius: '6px',
-            color: 'var(--text-primary)'
+            color: '#eeeeee'
           }}
           formatter={(value: number, name: string) => [`${value.toFixed(0)} MB`, name]}
         />

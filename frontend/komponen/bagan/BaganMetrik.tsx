@@ -14,7 +14,7 @@ export default function BaganMetrik({ idServer }: PropsBaganMetrik) {
         <JudulKartu>Metrik Server {idServer}</JudulKartu>
       </HeaderKartu>
       <KontenKartu>
-        <div className="h-64 flex items-center justify-center bg-gray-50 rounded">
+        <div className="h-64 flex items-center justify-center bg-neutral-800 rounded-xl">
           <p className="text-gray-500">Bagan metrik akan diimplementasikan dengan Recharts</p>
         </div>
 

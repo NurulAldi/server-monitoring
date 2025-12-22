@@ -45,11 +45,11 @@ export default function DaftarAlertLengkap() {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-gray-400" />
+            <Filter className="h-5 w-5 text-neutral-400" />
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-neutral-700 rounded-xl px-3 py-2 text-body bg-deep-grey text-high-contrast focus:outline-none focus:ring-2 focus:ring-accent-blue"
             >
               <option value="semua">Semua Status</option>
               <option value="aktif">Aktif</option>
@@ -59,11 +59,11 @@ export default function DaftarAlertLengkap() {
           </div>
 
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-gray-400" />
+            <AlertTriangle className="h-5 w-5 text-neutral-400" />
             <select
               value={filterTingkat}
               onChange={(e) => setFilterTingkat(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-neutral-700 rounded-xl px-3 py-2 text-body bg-deep-grey text-high-contrast focus:outline-none focus:ring-2 focus:ring-accent-blue"
             >
               <option value="semua">Semua Tingkat</option>
               <option value="kritis">Kritis</option>
@@ -85,7 +85,7 @@ export default function DaftarAlertLengkap() {
           <div className="text-gray-400 mb-4">
             <Search className="h-12 w-12 mx-auto" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-heading-md font-medium text-high-contrast mb-2">
             Tidak ada alert ditemukan
           </h3>
           <p className="text-gray-600">
@@ -103,8 +103,8 @@ export default function DaftarAlertLengkap() {
       )}
 
       {/* Statistik */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Ringkasan Alert</h3>
+      <div className="bg-deep-grey rounded-2xl border border-neutral-700 p-6">
+        <h3 className="text-heading-md font-semibold text-high-contrast mb-4">Ringkasan Alert</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-red-600">

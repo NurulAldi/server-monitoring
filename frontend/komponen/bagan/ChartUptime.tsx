@@ -134,7 +134,7 @@ export function ChartUptime({
               cx="60"
               cy="60"
               r="50"
-              stroke="var(--bg-border)"
+              stroke="#393c41"
               strokeWidth="8"
               fill="none"
             />
@@ -145,10 +145,10 @@ export function ChartUptime({
               cy="60"
               r="50"
               stroke={
-                isExcellent ? 'var(--status-online)' :
-                isAtRisk ? 'var(--accent-secondary)' :
-                isBelowSLA ? 'var(--status-warning)' :
-                'var(--status-critical)'
+                isExcellent ? '#00d448' :
+                isAtRisk ? '#f7c948' :
+                isBelowSLA ? '#f7c948' :
+                '#e31937'
               }
               strokeWidth="8"
               fill="none"
@@ -162,7 +162,7 @@ export function ChartUptime({
               cx="60"
               cy="60"
               r="50"
-              stroke="var(--accent-primary)"
+              stroke="#3e6ae1"
               strokeWidth="2"
               fill="none"
               strokeDasharray={`${(targetUptime / 100) * 314} 314`}
@@ -191,33 +191,33 @@ export function ChartUptime({
           <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="var(--data-grid)"
+              stroke="#393c41"
               opacity={0.3}
             />
 
             <XAxis
               dataKey="waktu"
-              stroke="var(--text-secondary)"
+              stroke="#8a8d91"
               fontSize={11}
-              tick={{ fill: 'var(--text-secondary)' }}
-              axisLine={{ stroke: 'var(--bg-border)' }}
+              tick={{ fill: '#8a8d91' }}
+              axisLine={{ stroke: '#393c41' }}
             />
 
             <YAxis
-              stroke="var(--text-secondary)"
+              stroke="#8a8d91"
               fontSize={11}
-              tick={{ fill: 'var(--text-secondary)' }}
-              axisLine={{ stroke: 'var(--bg-border)' }}
+              tick={{ fill: '#8a8d91' }}
+              axisLine={{ stroke: '#393c41' }}
               label={{ value: 'Uptime %', angle: -90, position: 'insideLeft' }}
               domain={[95, 100]}
             />
 
             <Tooltip
               contentStyle={{
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--bg-border)',
+                background: '#171a20',
+                border: '1px solid #393c41',
                 borderRadius: '6px',
-                color: 'var(--text-primary)'
+                color: '#eeeeee'
               }}
               formatter={(value: number, name: string) => {
                 if (name === 'uptime') return [formatUptime(value), 'Uptime']
@@ -229,16 +229,16 @@ export function ChartUptime({
             {/* Target line */}
             <ReferenceLine
               y={targetUptime}
-              stroke="var(--accent-primary)"
+              stroke="#3e6ae1"
               strokeDasharray="5 5"
-              label={{ value: `Target ${formatUptime(targetUptime)}`, position: "topRight", fill: "var(--accent-primary)" }}
+              label={{ value: `Target ${formatUptime(targetUptime)}`, position: "topRight", fill: "#3e6ae1" }}
             />
 
             <Area
               type="monotone"
               dataKey="uptime"
-              stroke="#00FF88"
-              fill="#00FF88"
+              stroke="#00d448"
+              fill="#00d448"
               fillOpacity={0.3}
               name="uptime"
               animationDuration={300}
@@ -248,33 +248,33 @@ export function ChartUptime({
           <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="var(--data-grid)"
+              stroke="#393c41"
               opacity={0.3}
             />
 
             <XAxis
               dataKey="waktu"
-              stroke="var(--text-secondary)"
+              stroke="#8a8d91"
               fontSize={11}
-              tick={{ fill: 'var(--text-secondary)' }}
-              axisLine={{ stroke: 'var(--bg-border)' }}
+              tick={{ fill: '#8a8d91' }}
+              axisLine={{ stroke: '#393c41' }}
             />
 
             <YAxis
-              stroke="var(--text-secondary)"
+              stroke="#8a8d91"
               fontSize={11}
-              tick={{ fill: 'var(--text-secondary)' }}
-              axisLine={{ stroke: 'var(--bg-border)' }}
+              tick={{ fill: '#8a8d91' }}
+              axisLine={{ stroke: '#393c41' }}
               label={{ value: 'Uptime %', angle: -90, position: 'insideLeft' }}
               domain={[95, 100]}
             />
 
             <Tooltip
               contentStyle={{
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--bg-border)',
+                background: '#171a20',
+                border: '1px solid #393c41',
                 borderRadius: '6px',
-                color: 'var(--text-primary)'
+                color: '#eeeeee'
               }}
               formatter={(value: number, name: string) => {
                 return [formatUptime(value), name]
@@ -284,9 +284,9 @@ export function ChartUptime({
             {/* Target line */}
             <ReferenceLine
               y={targetUptime}
-              stroke="var(--accent-primary)"
+              stroke="#3e6ae1"
               strokeDasharray="5 5"
-              label={{ value: `Target ${formatUptime(targetUptime)}`, position: "topRight", fill: "var(--accent-primary)" }}
+              label={{ value: `Target ${formatUptime(targetUptime)}`, position: "topRight", fill: "#3e6ae1" }}
             />
 
             <Line

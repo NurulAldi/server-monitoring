@@ -148,25 +148,25 @@ export function ChartDisk({
         <ComposedChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="var(--data-grid)"
+            stroke="#393c41"
             opacity={0.3}
           />
 
           <XAxis
             dataKey="waktu"
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
           />
 
           <YAxis
             yAxisId="usage"
             orientation="left"
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
             label={{ value: 'GB', angle: -90, position: 'insideLeft' }}
             domain={[0, totalDisk]}
           />
@@ -175,20 +175,20 @@ export function ChartDisk({
             <YAxis
               yAxisId="io"
               orientation="right"
-              stroke="var(--accent-tertiary)"
+              stroke="#3e6ae1"
               fontSize={11}
-              tick={{ fill: 'var(--accent-tertiary)' }}
-              axisLine={{ stroke: 'var(--bg-border)' }}
+              tick={{ fill: '#3e6ae1' }}
+              axisLine={{ stroke: '#393c41' }}
               label={{ value: 'MB/s', angle: 90, position: 'insideRight' }}
             />
           )}
 
           <Tooltip
             contentStyle={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--bg-border)',
+              background: '#171a20',
+              border: '1px solid #393c41',
               borderRadius: '6px',
-              color: 'var(--text-primary)'
+              color: '#eeeeee'
             }}
             formatter={(value: number, name: string) => {
               if (name === 'Used' || name === 'Available') {
@@ -205,30 +205,30 @@ export function ChartDisk({
           />
 
           <Legend
-            wrapperStyle={{ color: 'var(--text-secondary)' }}
+            wrapperStyle={{ color: '#8a8d91' }}
           />
 
           {/* Threshold lines */}
           <ReferenceLine
             yAxisId="usage"
             y={totalDisk * 0.95}
-            stroke="var(--status-critical)"
+            stroke="#e31937"
             strokeDasharray="5 5"
-            label={{ value: "Critical", position: "topRight", fill: "var(--status-critical)" }}
+            label={{ value: "Critical", position: "topRight", fill: "#e31937" }}
           />
           <ReferenceLine
             yAxisId="usage"
             y={totalDisk * 0.85}
-            stroke="var(--status-warning)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={{ value: "Warning", position: "topRight", fill: "var(--status-warning)" }}
+            label={{ value: "Warning", position: "topRight", fill: "#f7c948" }}
           />
           <ReferenceLine
             yAxisId="usage"
             y={totalDisk * 0.75}
-            stroke="var(--accent-secondary)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={{ value: "High", position: "topRight", fill: "var(--accent-secondary)" }}
+            label={{ value: "High", position: "topRight", fill: "#f7c948" }}
           />
 
           {/* Area for available space */}
@@ -238,7 +238,7 @@ export function ChartDisk({
             dataKey="available"
             stackId="1"
             stroke="transparent"
-            fill="var(--status-online)"
+            fill="#00d448"
             fillOpacity={0.1}
             name="Available"
           />
@@ -249,8 +249,8 @@ export function ChartDisk({
             type="monotone"
             dataKey="used"
             stackId="1"
-            stroke="var(--accent-primary)"
-            fill="var(--accent-primary)"
+            stroke="#3e6ae1"
+            fill="#3e6ae1"
             fillOpacity={0.6}
             name="Used"
           />
@@ -262,7 +262,7 @@ export function ChartDisk({
                 yAxisId="io"
                 type="monotone"
                 dataKey="readSpeed"
-                stroke="#00FF88"
+                stroke="#00d448"
                 strokeWidth={2}
                 name="Read Speed"
                 dot={false}
@@ -272,7 +272,7 @@ export function ChartDisk({
                 yAxisId="io"
                 type="monotone"
                 dataKey="writeSpeed"
-                stroke="#FF6B00"
+                stroke="#f7c948"
                 strokeWidth={2}
                 name="Write Speed"
                 dot={false}

@@ -62,9 +62,9 @@ export default function DaftarServer() {
       case 'warning':
         return 'text-yellow-600 bg-yellow-100'
       case 'offline':
-        return 'text-red-600 bg-red-100'
+        return 'text-accent-red bg-accent-red/10'
       default:
-        return 'text-gray-600 bg-gray-100'
+        return 'text-neutral-400 bg-neutral-800'
     }
   }
 
@@ -76,10 +76,10 @@ export default function DaftarServer() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">
+                  <h3 className="text-heading-md font-medium text-high-contrast">
                     {server.nama}
                   </h3>
-                  <p className="text-sm text-gray-500">ID: {server.id}</p>
+                  <p className="text-body-sm text-neutral-400">ID: {server.id}</p>
                 </div>
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
@@ -99,7 +99,7 @@ export default function DaftarServer() {
             {server.status !== 'offline' && (
               <div className="mt-4 grid grid-cols-4 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">CPU</p>
+                  <p className="text-data-label font-medium text-neutral-400">CPU</p>
                   <p className="text-lg font-semibold">{server.cpu}%</p>
                 </div>
                 <div>

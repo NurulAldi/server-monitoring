@@ -60,9 +60,9 @@ export default function StatistikSistem() {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg shadow p-6 animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
+          <div key={i} className="bg-deep-grey rounded-2xl border border-neutral-700 p-6 animate-pulse">
+            <div className="h-4 bg-neutral-700 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-neutral-700 rounded"></div>
           </div>
         ))}
       </div>
@@ -73,8 +73,8 @@ export default function StatistikSistem() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pengguna Aktif */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-deep-grey rounded-2xl border border-neutral-700 p-6">
+          <h3 className="text-heading-md font-semibold text-high-contrast mb-4">
             Pengguna Aktif per Hari
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -89,8 +89,8 @@ export default function StatistikSistem() {
         </div>
 
         {/* Status Server */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-deep-grey rounded-2xl border border-neutral-700 p-6">
+          <h3 className="text-heading-md font-semibold text-high-contrast mb-4">
             Distribusi Status Server
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -115,8 +115,8 @@ export default function StatistikSistem() {
         </div>
 
         {/* Alert per Hari */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-deep-grey rounded-2xl border border-neutral-700 p-6">
+          <h3 className="text-heading-md font-semibold text-high-contrast mb-4">
             Alert per Hari
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -131,8 +131,8 @@ export default function StatistikSistem() {
         </div>
 
         {/* Penggunaan CPU Rata-rata */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-deep-grey rounded-2xl border border-neutral-700 p-6">
+          <h3 className="text-heading-md font-semibold text-high-contrast mb-4">
             Penggunaan CPU Rata-rata
           </h3>
           <ResponsiveContainer width="100%" height={300}>

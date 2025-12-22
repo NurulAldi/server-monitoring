@@ -146,33 +146,33 @@ export function ChartErrorRate({
         <ChartComponent data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="var(--data-grid)"
+            stroke="#393c41"
             opacity={0.3}
           />
 
           <XAxis
             dataKey="waktu"
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
           />
 
           <YAxis
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
             label={{ value: showBar ? 'Error Count' : 'Error Rate (%)', angle: -90, position: 'insideLeft' }}
             domain={showBar ? [0, 'dataMax + 10'] : [0, maxErrorRate]}
           />
 
           <Tooltip
             contentStyle={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--bg-border)',
+              background: '#171a20',
+              border: '1px solid #393c41',
               borderRadius: '6px',
-              color: 'var(--text-primary)'
+              color: '#eeeeee'
             }}
             formatter={(value: number, name: string) => {
               if (name === 'errorRate') return [formatErrorRate(value), 'Error Rate']
@@ -181,36 +181,36 @@ export function ChartErrorRate({
           />
 
           <Legend
-            wrapperStyle={{ color: 'var(--text-secondary)' }}
+            wrapperStyle={{ color: '#8a8d91' }}
           />
 
           {/* Threshold lines */}
           <ReferenceLine
             y={showBar ? undefined : 5}
-            stroke="var(--status-critical)"
+            stroke="#e31937"
             strokeDasharray="5 5"
-            label={showBar ? undefined : { value: "Critical", position: "topRight", fill: "var(--status-critical)" }}
+            label={showBar ? undefined : { value: "Critical", position: "topRight", fill: "#e31937" }}
           />
           <ReferenceLine
             y={showBar ? undefined : 2}
-            stroke="var(--status-warning)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={showBar ? undefined : { value: "Warning", position: "topRight", fill: "var(--status-warning)" }}
+            label={showBar ? undefined : { value: "Warning", position: "topRight", fill: "#f7c948" }}
           />
           <ReferenceLine
             y={showBar ? undefined : 1}
-            stroke="var(--accent-secondary)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={showBar ? undefined : { value: "Elevated", position: "topRight", fill: "var(--accent-secondary)" }}
+            label={showBar ? undefined : { value: "Elevated", position: "topRight", fill: "#f7c948" }}
           />
 
           {showBar ? (
             // Bar chart for error counts
             <>
-              <Bar dataKey="error4xx" stackId="errors" fill="#FF6B00" name="4xx Errors" />
-              <Bar dataKey="error5xx" stackId="errors" fill="#FF0080" name="5xx Errors" />
-              <Bar dataKey="timeoutErrors" stackId="errors" fill="#9D4EDD" name="Timeouts" />
-              <Bar dataKey="networkErrors" stackId="errors" fill="#00D4FF" name="Network" />
+              <Bar dataKey="error4xx" stackId="errors" fill="#f7c948" name="4xx Errors" />
+              <Bar dataKey="error5xx" stackId="errors" fill="#e31937" name="5xx Errors" />
+              <Bar dataKey="timeoutErrors" stackId="errors" fill="#8a8d91" name="Timeouts" />
+              <Bar dataKey="networkErrors" stackId="errors" fill="#3e6ae1" name="Network" />
             </>
           ) : showStacked ? (
             // Stacked area chart for error rates
@@ -219,8 +219,8 @@ export function ChartErrorRate({
                 type="monotone"
                 dataKey="errorRate"
                 stackId="1"
-                stroke="#FF0080"
-                fill="#FF0080"
+                stroke="#e31937"
+                fill="#e31937"
                 fillOpacity={0.8}
                 name="Total Error Rate"
                 animationDuration={300}

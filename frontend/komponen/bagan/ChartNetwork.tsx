@@ -140,25 +140,25 @@ export function ChartNetwork({
         <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="var(--data-grid)"
+            stroke="#393c41"
             opacity={0.3}
           />
 
           <XAxis
             dataKey="waktu"
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
           />
 
           <YAxis
             yAxisId="bandwidth"
             orientation="left"
-            stroke="var(--text-secondary)"
+            stroke="#8a8d91"
             fontSize={11}
-            tick={{ fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'var(--bg-border)' }}
+            tick={{ fill: '#8a8d91' }}
+            axisLine={{ stroke: '#393c41' }}
             label={{ value: 'Mbps', angle: -90, position: 'insideLeft' }}
             domain={[0, maxBandwidth]}
           />
@@ -167,20 +167,20 @@ export function ChartNetwork({
             <YAxis
               yAxisId="packets"
               orientation="right"
-              stroke="var(--accent-tertiary)"
+              stroke="#3e6ae1"
               fontSize={11}
-              tick={{ fill: 'var(--accent-tertiary)' }}
-              axisLine={{ stroke: 'var(--bg-border)' }}
+              tick={{ fill: '#3e6ae1' }}
+              axisLine={{ stroke: '#393c41' }}
               label={{ value: 'Packets/s', angle: 90, position: 'insideRight' }}
             />
           )}
 
           <Tooltip
             contentStyle={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--bg-border)',
+              background: '#171a20',
+              border: '1px solid #393c41',
               borderRadius: '6px',
-              color: 'var(--text-primary)'
+              color: '#eeeeee'
             }}
             formatter={(value: number, name: string) => {
               if (name === 'Upload' || name === 'Download') {
@@ -194,23 +194,23 @@ export function ChartNetwork({
           />
 
           <Legend
-            wrapperStyle={{ color: 'var(--text-secondary)' }}
+            wrapperStyle={{ color: '#8a8d91' }}
           />
 
           {/* Threshold lines */}
           <ReferenceLine
             yAxisId="bandwidth"
             y={maxBandwidth * 0.95}
-            stroke="var(--status-critical)"
+            stroke="#e31937"
             strokeDasharray="5 5"
-            label={{ value: "Critical", position: "topRight", fill: "var(--status-critical)" }}
+            label={{ value: "Critical", position: "topRight", fill: "#e31937" }}
           />
           <ReferenceLine
             yAxisId="bandwidth"
             y={maxBandwidth * 0.8}
-            stroke="var(--status-warning)"
+            stroke="#f7c948"
             strokeDasharray="5 5"
-            label={{ value: "Warning", position: "topRight", fill: "var(--status-warning)" }}
+            label={{ value: "Warning", position: "topRight", fill: "#f7c948" }}
           />
 
           {/* Bandwidth lines */}
@@ -218,7 +218,7 @@ export function ChartNetwork({
             yAxisId="bandwidth"
             type="monotone"
             dataKey="download"
-            stroke="#00FF88"
+            stroke="#00d448"
             strokeWidth={2}
             name="Download"
             dot={false}
@@ -228,7 +228,7 @@ export function ChartNetwork({
             yAxisId="bandwidth"
             type="monotone"
             dataKey="upload"
-            stroke="#FF6B00"
+            stroke="#f7c948"
             strokeWidth={2}
             name="Upload"
             dot={false}
@@ -242,7 +242,7 @@ export function ChartNetwork({
                 yAxisId="packets"
                 type="monotone"
                 dataKey="packetsIn"
-                stroke="#9D4EDD"
+                stroke="#8a8d91"
                 strokeWidth={1}
                 strokeDasharray="5 5"
                 name="Packets In"
@@ -253,7 +253,7 @@ export function ChartNetwork({
                 yAxisId="packets"
                 type="monotone"
                 dataKey="packetsOut"
-                stroke="#00D4FF"
+                stroke="#3e6ae1"
                 strokeWidth={1}
                 strokeDasharray="5 5"
                 name="Packets Out"
@@ -269,9 +269,9 @@ export function ChartNetwork({
               <ReferenceLine
                 key={`error-${index}`}
                 x={item.waktu}
-                stroke="var(--status-critical)"
+                stroke="#e31937"
                 strokeWidth={3}
-                label={{ value: "ERR", position: "top", fill: "var(--status-critical)" }}
+                label={{ value: "ERR", position: "top", fill: "#e31937" }}
               />
             )
           ))}

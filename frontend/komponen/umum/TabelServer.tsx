@@ -43,63 +43,63 @@ export default function TabelServer() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
-        return 'text-green-600 bg-green-100'
+        return 'text-status-online bg-status-online/10'
       case 'offline':
-        return 'text-red-600 bg-red-100'
+        return 'text-accent-red bg-accent-red/10'
       case 'maintenance':
-        return 'text-yellow-600 bg-yellow-100'
+        return 'text-warning-amber bg-warning-amber/10'
       default:
-        return 'text-gray-600 bg-gray-100'
+        return 'text-neutral-400 bg-neutral-700/10'
     }
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-neutral-700">
+        <thead className="bg-neutral-800">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-data-label font-medium text-neutral-500 uppercase tracking-wider">
               Nama Server
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-data-label font-medium text-neutral-500 uppercase tracking-wider">
               IP Address
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-data-label font-medium text-neutral-500 uppercase tracking-wider">
               Status
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-data-label font-medium text-neutral-500 uppercase tracking-wider">
               Lokasi
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-data-label font-medium text-neutral-500 uppercase tracking-wider">
               Terakhir Update
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-data-label font-medium text-neutral-500 uppercase tracking-wider">
               Aksi
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-deep-grey divide-y divide-neutral-700">
           {dataServer.map((server) => (
             <tr key={server.id}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-body font-medium text-high-contrast">
                 {server.nama}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-body-sm text-neutral-400">
                 {server.ip}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                  className={`inline-flex items-center px-3 py-1 rounded-pill text-xs font-medium ${getStatusColor(
                     server.status
                   )}`}
                 >
                   {server.status.toUpperCase()}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-body-sm text-neutral-400">
                 {server.lokasi}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-body-sm text-neutral-400">
                 {server.terakhirUpdate}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
