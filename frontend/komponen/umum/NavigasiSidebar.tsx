@@ -8,7 +8,6 @@ import {
   Server,
   AlertTriangle,
   MessageSquare,
-  Settings,
   LogOut,
   Activity,
 } from 'lucide-react'
@@ -34,11 +33,6 @@ const menuItems = [
     label: 'Chat AI',
     href: '/dashboard/obrolan',
     icon: MessageSquare,
-  },
-  {
-    label: 'Pengaturan',
-    href: '/dashboard/pengaturan',
-    icon: Settings,
   },
 ]
 

@@ -8,7 +8,7 @@ const layananAutentikasi = require('../layanan/layananAutentikasi');
 // Registrasi pengguna baru
 async function registrasi(req, res) {
   try {
-    const { nama, email, kataSandi } = req.body;
+    const { email, kataSandi } = req.body;
 
     // Log aktivitas registrasi
     logger.logUserActivity('anonymous', 'REGISTRATION_ATTEMPT', {
@@ -17,8 +17,8 @@ async function registrasi(req, res) {
       userAgent: req.get('User-Agent')
     });
 
-    // Panggil layanan autentikasi untuk registrasi
-    const hasil = await layananAutentikasi.registrasi(nama, email, kataSandi);
+    // Panggil layanan autentikasi untuk registrasi (email and password only)
+    const hasil = await layananAutentikasi.registrasi(email, kataSandi);
 
     // Log berhasil registrasi
     logger.logUserActivity(hasil.pengguna.id, 'REGISTRATION_SUCCESS', {
@@ -33,10 +33,7 @@ async function registrasi(req, res) {
       data: {
         pengguna: {
           id: hasil.pengguna.id,
-          nama: hasil.pengguna.nama,
-          email: hasil.pengguna.email,
-          peran: hasil.pengguna.peran,
-          dibuatPada: hasil.pengguna.dibuatPada
+          email: hasil.pengguna.email
         }
       },
       timestamp: new Date().toISOString()
@@ -110,10 +107,7 @@ async function login(req, res) {
       data: {
         pengguna: {
           id: hasil.pengguna.id,
-          nama: hasil.pengguna.nama,
-          email: hasil.pengguna.email,
-          peran: hasil.pengguna.peran,
-          terakhirLogin: hasil.pengguna.terakhirLogin
+          email: hasil.pengguna.email
         }
       },
       timestamp: new Date().toISOString()
@@ -206,18 +200,13 @@ async function ambilProfil(req, res) {
     // Panggil layanan autentikasi untuk ambil profil
     const pengguna = await layananAutentikasi.ambilProfil(userId);
 
-    // Response sukses
+    // Response sukses (only id and email)
     res.status(HTTP_STATUS.OK).json({
       success: true,
       data: {
         pengguna: {
           id: pengguna.id,
-          nama: pengguna.nama,
-          email: pengguna.email,
-          peran: pengguna.peran,
-          dibuatPada: pengguna.dibuatPada,
-          terakhirLogin: pengguna.terakhirLogin,
-          statusAktif: pengguna.statusAktif
+          email: pengguna.email
         }
       },
       timestamp: new Date().toISOString()
@@ -242,73 +231,6 @@ async function ambilProfil(req, res) {
   }
 }
 
-// Update profil pengguna
-async function updateProfil(req, res) {
-  try {
-    const userId = req.user.id;
-    const { nama, email } = req.body;
-
-    // Log aktivitas update profil
-    logger.logUserActivity(userId, 'PROFILE_UPDATE_ATTEMPT', {
-      ip: req.ip,
-      changes: { nama, email }
-    });
-
-    // Panggil layanan autentikasi untuk update profil
-    const pengguna = await layananAutentikasi.updateProfil(userId, { nama, email });
-
-    // Log berhasil update
-    logger.logUserActivity(userId, 'PROFILE_UPDATE_SUCCESS', {
-      ip: req.ip
-    });
-
-    // Response sukses
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      message: 'Profil berhasil diperbarui.',
-      data: {
-        pengguna: {
-          id: pengguna.id,
-          nama: pengguna.nama,
-          email: pengguna.email,
-          peran: pengguna.peran,
-          diperbaruiPada: pengguna.diperbaruiPada
-        }
-      },
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    // Log error update profil
-    logger.logUserActivity(req.user?.id || 'anonymous', 'PROFILE_UPDATE_FAILED', {
-      error: error.message,
-      ip: req.ip
-    });
-
-    // Handle error berdasarkan tipe
-    if (error.message === 'Email sudah digunakan oleh pengguna lain') {
-      return res.status(HTTP_STATUS.CONFLICT).json({
-        success: false,
-        error: {
-          code: ERROR_CODE.USER_EXISTS,
-          message: error.message,
-          timestamp: new Date().toISOString()
-        }
-      });
-    }
-
-    // Error umum
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: {
-        code: ERROR_CODE.INTERNAL_ERROR,
-        message: 'Terjadi kesalahan saat memperbarui profil.',
-        timestamp: new Date().toISOString()
-      }
-    });
-  }
-}
-
 // Verifikasi token (untuk middleware autentikasi)
 async function verifikasiToken(req, res) {
   try {
@@ -320,16 +242,14 @@ async function verifikasiToken(req, res) {
       ip: req.ip
     });
 
-    // Response sukses
+    // Response sukses (only id and email)
     res.status(HTTP_STATUS.OK).json({
       success: true,
       message: 'Token valid.',
       data: {
         pengguna: {
           id: req.user.id,
-          nama: req.user.nama,
-          email: req.user.email,
-          peran: req.user.peran
+          email: req.user.email
         }
       },
       timestamp: new Date().toISOString()
@@ -360,6 +280,5 @@ module.exports = {
   login,
   logout,
   ambilProfil,
-  updateProfil,
   verifikasiToken
 };

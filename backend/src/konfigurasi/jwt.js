@@ -30,12 +30,11 @@ const COOKIE_OPTIONS = {
 // Fungsi untuk generate JWT token
 function generateToken(payload) {
   try {
-    // Payload yang akan disimpan di token
+    // Minimal payload - only id and email for auth
     const tokenPayload = {
-      id: payload._id || payload.id, // ID user dari database
+      id: payload._id || payload.id,
       email: payload.email,
-      peran: payload.peran || 'user', // Default role 'user'
-      iat: Math.floor(Date.now() / 1000), // Issued at timestamp
+      iat: Math.floor(Date.now() / 1000),
     };
 
     // Generate token dengan secret dan expiration

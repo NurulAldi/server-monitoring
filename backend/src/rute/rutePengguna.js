@@ -55,15 +55,6 @@ router.get('/profil',
   kontrolerPengguna.ambilProfil
 );
 
-// Route untuk update profil pengguna
-// PUT /api/pengguna/profil
-router.put('/profil',
-  autentikasi.verifikasiToken, // Middleware autentikasi
-  rateLimiter.limiterGeneral, // Rate limit umum
-  validasiUpdateProfil, // Validasi input
-  kontrolerPengguna.updateProfil
-);
-
 // Route untuk ganti password (opsional, bisa ditambahkan nanti)
 // PUT /api/pengguna/ganti-password
 // router.put('/ganti-password',

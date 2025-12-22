@@ -9,7 +9,7 @@ const { logger } = require('../utilitas/logger');
 const { ERROR_CODE } = require('../utilitas/konstanta');
 
 // Registrasi pengguna baru
-async function registrasi(nama, email, kataSandi) {
+async function registrasi(email, kataSandi) {
   try {
     // Cek apakah email sudah terdaftar
     const penggunaAda = await Pengguna.findOne({ email: email.toLowerCase() });
@@ -23,45 +23,35 @@ async function registrasi(nama, email, kataSandi) {
 
     // Buat pengguna baru
     const penggunaBaru = new Pengguna({
-      nama: nama.trim(),
       email: email.toLowerCase().trim(),
-      kataSandi: hashedPassword,
-      peran: 'user', // Default role
-      statusAktif: true
+      kataSandi: hashedPassword
     });
 
     // Simpan ke database
     const penggunaTersimpan = await penggunaBaru.save();
 
-    // Generate JWT token
+    // Generate JWT token (only id and email)
     const token = generateToken({
       id: penggunaTersimpan._id,
-      nama: penggunaTersimpan.nama,
-      email: penggunaTersimpan.email,
-      peran: penggunaTersimpan.peran
+      email: penggunaTersimpan.email
     });
 
     // Log aktivitas
     logger.logUserActivity(penggunaTersimpan._id, 'USER_REGISTERED', {
-      email: penggunaTersimpan.email,
-      role: penggunaTersimpan.peran
+      email: penggunaTersimpan.email
     });
 
     return {
       pengguna: {
         id: penggunaTersimpan._id,
-        nama: penggunaTersimpan.nama,
-        email: penggunaTersimpan.email,
-        peran: penggunaTersimpan.peran,
-        dibuatPada: penggunaTersimpan.dibuatPada
+        email: penggunaTersimpan.email
       },
       token: token
     };
 
   } catch (error) {
     logger.logSystemError('AUTH_SERVICE_REGISTRATION_ERROR', error, {
-      email: email,
-      name: nama
+      email: email
     });
     throw error;
   }
@@ -70,33 +60,32 @@ async function registrasi(nama, email, kataSandi) {
 // Login pengguna
 async function login(email, kataSandi) {
   try {
-    // Cari pengguna berdasarkan email
-    const pengguna = await Pengguna.findOne({ email: email.toLowerCase() });
+    // Cari pengguna berdasarkan email (include password for verification)
+    const pengguna = await Pengguna.findOne({ email: email.toLowerCase() }).select('+kataSandi');
     if (!pengguna) {
       throw new Error('Email atau password salah');
     }
 
-    // Cek apakah pengguna aktif
-    if (!pengguna.statusAktif) {
-      throw new Error('Akun tidak aktif. Silakan hubungi administrator.');
+    // Cek apakah akun dikunci
+    if (pengguna.adalahAkunDikunci) {
+      throw new Error('Akun dikunci sementara karena terlalu banyak percobaan login gagal');
     }
 
     // Verifikasi password
-    const passwordValid = await bcrypt.compare(kataSandi, pengguna.kataSandi);
+    const passwordValid = await pengguna.verifikasiPassword(kataSandi);
     if (!passwordValid) {
+      // Record login gagal
+      await pengguna.recordLoginGagal();
       throw new Error('Email atau password salah');
     }
 
-    // Update waktu terakhir login
-    pengguna.terakhirLogin = new Date();
-    await pengguna.save();
+    // Record login berhasil
+    await pengguna.recordLoginBerhasil();
 
-    // Generate JWT token
+    // Generate JWT token (only id and email)
     const token = generateToken({
       id: pengguna._id,
-      nama: pengguna.nama,
-      email: pengguna.email,
-      peran: pengguna.peran
+      email: pengguna.email
     });
 
     // Log aktivitas
@@ -108,10 +97,7 @@ async function login(email, kataSandi) {
     return {
       pengguna: {
         id: pengguna._id,
-        nama: pengguna.nama,
-        email: pengguna.email,
-        peran: pengguna.peran,
-        terakhirLogin: pengguna.terakhirLogin
+        email: pengguna.email
       },
       token: token
     };
@@ -159,6 +145,18 @@ async function ambilProfil(userId) {
 
     return {
       id: pengguna._id,
+      email: pengguna.email
+    };
+
+  } catch (error) {
+    logger.logSystemError('AUTH_SERVICE_GET_PROFILE_ERROR', error, {
+      userId: userId
+    });
+    throw error;
+  }
+}
+
+// Verifikasi dan decode JWT token
       nama: pengguna.nama,
       email: pengguna.email,
       peran: pengguna.peran,
@@ -177,76 +175,20 @@ async function ambilProfil(userId) {
 }
 
 // Update profil pengguna
-async function updateProfil(userId, dataUpdate) {
-  try {
-    const { nama, email } = dataUpdate;
-
-    // Jika email diupdate, cek apakah sudah digunakan user lain
-    if (email) {
-      const penggunaAda = await Pengguna.findOne({
-        email: email.toLowerCase(),
-        _id: { $ne: userId }
-      });
-
-      if (penggunaAda) {
-        throw new Error('Email sudah digunakan oleh pengguna lain');
-      }
-    }
-
-    // Update data pengguna
-    const updateData = {};
-    if (nama) updateData.nama = nama.trim();
-    if (email) updateData.email = email.toLowerCase().trim();
-    updateData.diperbaruiPada = new Date();
-
-    const pengguna = await Pengguna.findByIdAndUpdate(
-      userId,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-kataSandi');
-
-    if (!pengguna) {
-      throw new Error('Pengguna tidak ditemukan');
-    }
-
-    // Log aktivitas
-    logger.logUserActivity(userId, 'USER_PROFILE_UPDATED', {
-      changes: Object.keys(updateData)
-    });
-
-    return {
-      id: pengguna._id,
-      nama: pengguna.nama,
-      email: pengguna.email,
-      peran: pengguna.peran,
-      diperbaruiPada: pengguna.diperbaruiPada
-    };
-
-  } catch (error) {
-    logger.logSystemError('AUTH_SERVICE_UPDATE_PROFILE_ERROR', error, {
-      userId: userId,
-      updateData: dataUpdate
-    });
-    throw error;
-  }
-}
-
 // Verifikasi dan decode JWT token
 async function verifikasiTokenUser(token) {
   try {
     const decoded = verifyToken(token);
 
-    // Cek apakah pengguna masih ada dan aktif
+    // Cek apakah pengguna masih ada
     const pengguna = await Pengguna.findById(decoded.id).select('-kataSandi');
-    if (!pengguna || !pengguna.statusAktif) {
-      throw new Error('Token tidak valid atau pengguna tidak aktif');
+    if (!pengguna) {
+      throw new Error('Token tidak valid atau pengguna tidak ditemukan');
     }
 
     return {
       id: pengguna._id,
-      nama: pengguna.nama,
-      email: pengguna.email,
-      peran: pengguna.peran
+      email: pengguna.email
     };
 
   } catch (error) {
@@ -329,7 +271,6 @@ module.exports = {
   login,
   logout,
   ambilProfil,
-  updateProfil,
   verifikasiTokenUser,
   gantiPassword,
   resetPassword
