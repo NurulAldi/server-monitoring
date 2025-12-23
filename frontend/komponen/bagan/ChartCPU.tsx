@@ -81,7 +81,7 @@ export function ChartCPU({
       // No data available, show empty state
       setData([])
     }
-  }, [socketData, showRealtime, mockData, data.length])
+  }, [socketData, showRealtime, mockData])
 
   const currentValue = currentUsage || (data.length > 0 ? data[data.length - 1].cpu : 0)
   const statusColor = getStatusColor(currentValue, warningThreshold, criticalThreshold)

@@ -10,6 +10,7 @@ import { useAutentikasi } from '@/kait/useAutentikasi'
 import { Tombol } from '@/komponen/umum/Tombol'
 import { Input } from '@/komponen/umum/Input'
 import { Label } from '@/komponen/umum/Label'
+import { KONSTANTA } from '@/utilitas/konstanta'
 
 const skemaMasuk = z.object({
   email: z.string().email('Email tidak valid'),
@@ -48,8 +49,7 @@ export default function FormulirMasuk() {
     setLoginError('')
     try {
       await login(data)
-      // Redirect to dashboard on success
-      router.push('/dashboard')
+      // Redirect is handled by the useEffect below
     } catch (err: any) {
       // Network errors
       if (!err?.response) {

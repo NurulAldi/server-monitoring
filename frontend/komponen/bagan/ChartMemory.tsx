@@ -161,36 +161,34 @@ export function ChartMemory({
 
   const renderDonutChart = () => (
     <div className="flex flex-col items-center">
-      <ResponsiveContainer width={200} height={200}>
-        <PieChart>
-          <Pie
-            data={getDonutData()}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={90}
-            paddingAngle={2}
-            dataKey="value"
-            isAnimationActive={false}
-          >
-            {getDonutData().map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              background: '#171a20',
-              border: '1px solid #393c41',
-              borderRadius: '6px',
-              color: '#eeeeee'
-            }}
-            formatter={(value: number, name: string) => [
-              `${value.toFixed(0)} MB (${getDonutData().find(d => d.name === name)?.percentage}%)`,
-              name
-            ]}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+      <PieChart width={200} height={200}>
+        <Pie
+          data={getDonutData()}
+          cx="50%"
+          cy="50%"
+          innerRadius={60}
+          outerRadius={90}
+          paddingAngle={2}
+          dataKey="value"
+          isAnimationActive={false}
+        >
+          {getDonutData().map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.color} />
+          ))}
+        </Pie>
+        <Tooltip
+          contentStyle={{
+            background: '#171a20',
+            border: '1px solid #393c41',
+            borderRadius: '6px',
+            color: '#eeeeee'
+          }}
+          formatter={(value: number, name: string) => [
+            `${value.toFixed(0)} MB (${getDonutData().find(d => d.name === name)?.percentage}%)`,
+            name
+          ]}
+        />
+      </PieChart>
 
       <div className="text-center mt-4">
         <div className={`text-3xl font-bold ${

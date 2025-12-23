@@ -113,15 +113,19 @@ export function useMetrics(serverId?: string) {
 export function useCPUMetrics(serverId?: string) {
   const { currentMetrics } = useMetrics(serverId)
 
-  const cpuData = currentMetrics ? [{
-    waktu: new Date(currentMetrics.timestamp || Date.now()).toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }),
-    usage: currentMetrics.cpu || 0,
-    timestamp: currentMetrics.timestamp || Date.now()
-  }] : []
+  const cpuData = useMemo(() => {
+    if (!currentMetrics) return []
+
+    return [{
+      waktu: new Date(currentMetrics.timestamp || Date.now()).toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }),
+      usage: currentMetrics.cpu || 0,
+      timestamp: currentMetrics.timestamp || Date.now()
+    }]
+  }, [currentMetrics?.cpu, currentMetrics?.timestamp])
 
   return {
     data: cpuData,
@@ -134,18 +138,22 @@ export function useCPUMetrics(serverId?: string) {
 export function useMemoryMetrics(serverId?: string) {
   const { currentMetrics } = useMetrics(serverId)
 
-  const memoryData = currentMetrics ? [{
-    waktu: new Date(currentMetrics.timestamp || Date.now()).toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }),
-    used: currentMetrics.memori || 0,
-    available: 100 - (currentMetrics.memori || 0), // Calculate available
-    total: 100, // Percentage based
-    usagePercent: currentMetrics.memori || 0,
-    timestamp: currentMetrics.timestamp || Date.now()
-  }] : []
+  const memoryData = useMemo(() => {
+    if (!currentMetrics) return []
+
+    return [{
+      waktu: new Date(currentMetrics.timestamp || Date.now()).toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }),
+      used: currentMetrics.memori || 0,
+      available: 100 - (currentMetrics.memori || 0), // Calculate available
+      total: 100, // Percentage based
+      usagePercent: currentMetrics.memori || 0,
+      timestamp: currentMetrics.timestamp || Date.now()
+    }]
+  }, [currentMetrics?.memori, currentMetrics?.timestamp])
 
   return {
     data: memoryData,
@@ -219,21 +227,25 @@ export function useNetworkMetrics(serverId?: string) {
 export function useDiskMetrics(serverId?: string) {
   const { currentMetrics } = useMetrics(serverId)
 
-  const diskData = currentMetrics?.disk ? [{
-    waktu: new Date(currentMetrics.timestamp || Date.now()).toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }),
-    used: currentMetrics.disk || 0,
-    available: 100 - (currentMetrics.disk || 0), // Calculate available
-    total: 100, // Percentage based
-    usagePercent: currentMetrics.disk || 0,
-    readSpeed: 0, // Not available in API
-    writeSpeed: 0, // Not available in API
-    iops: 0, // Not available in API
-    timestamp: currentMetrics.timestamp || Date.now()
-  }] : []
+  const diskData = useMemo(() => {
+    if (!currentMetrics?.disk) return []
+
+    return [{
+      waktu: new Date(currentMetrics.timestamp || Date.now()).toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }),
+      used: currentMetrics.disk || 0,
+      available: 100 - (currentMetrics.disk || 0), // Calculate available
+      total: 100, // Percentage based
+      usagePercent: currentMetrics.disk || 0,
+      readSpeed: 0, // Not available in API
+      writeSpeed: 0, // Not available in API
+      iops: 0, // Not available in API
+      timestamp: currentMetrics.timestamp || Date.now()
+    }]
+  }, [currentMetrics?.disk, currentMetrics?.timestamp])
 
   return {
     data: diskData,
