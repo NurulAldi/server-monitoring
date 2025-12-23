@@ -35,8 +35,8 @@ router.post('/login',
 
 // Route untuk logout pengguna
 // POST /api/pengguna/logout
+// Allow anonymous access so clients can clear cookies and perform logout even when the token is missing/expired
 router.post('/logout',
-  autentikasi.verifikasiToken, // Middleware autentikasi
   validasiLogout, // Validasi input (minimal)
   kontrolerPengguna.logout
 );

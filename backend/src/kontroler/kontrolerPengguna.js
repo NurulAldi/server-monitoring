@@ -217,7 +217,8 @@ async function logout(req, res) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      path: '/'
+      path: '/',
+      maxAge: 0 // Explicitly expire the cookie
     });
 
     // Response sukses

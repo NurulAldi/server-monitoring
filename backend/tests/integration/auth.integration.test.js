@@ -372,6 +372,76 @@ describe('Authentication Endpoints Integration Tests', () => {
     });
   });
 
+  describe('POST /api/pengguna/logout', () => {
+    test('should return 200 even when unauthenticated (allow clearing cookie)', async () => {
+      const response = await agent
+        .post('/api/pengguna/logout')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toMatch(/logout|berhasil|success/i);
+    });
+
+    test('should clear auth_token cookie and make profile inaccessible after logout', async () => {
+      // Create user and generate a valid JWT token to avoid rate-limiter on login endpoint
+      const jwt = require('jsonwebtoken')
+      const bcrypt = require('bcrypt')
+      const password = 'Password123'
+      const hashed = await bcrypt.hash(password, 12)
+
+      const user = new Pengguna({
+        email: 'logouttest@example.com',
+        kataSandiHash: hashed,
+        peran: 'user',
+        statusAktif: true,
+        emailTerverifikasi: true
+      })
+      await user.save()
+
+      // Generate token and set cookie on requests (simulate logged-in client)
+      const token = jwt.sign(
+        { userId: user._id.toString(), id: user._id.toString(), email: user.email, peran: user.peran },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h', issuer: 'monitoring-server', audience: 'monitoring-client' }
+      )
+
+      // Self-verify generated token to ensure it is valid for server verification
+      try {
+        jwt.verify(token, process.env.JWT_SECRET, { issuer: 'monitoring-server', audience: 'monitoring-client' })
+      } catch (err) {
+        console.error('Token fails local verification:', err.message)
+        throw err
+      }
+
+      // Confirm token is valid via Authorization header before logout
+      const profileAuth = await agent
+        .get('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200)
+      expect(profileAuth.body.success).toBe(true)
+
+      // Perform logout which should clear the cookie (client would process Set-Cookie and drop it)
+      const logoutRes = await agent
+        .post('/api/pengguna/logout')
+        .set('Cookie', `auth_token=${token}`)
+        .expect(200)
+      expect(logoutRes.body.success).toBe(true)
+
+      // Verify logout response included a clearing Set-Cookie header for auth_token
+      const logoutSetCookie = logoutRes.headers['set-cookie']
+      expect(Array.isArray(logoutSetCookie)).toBe(true)
+      const cleared = logoutSetCookie.find((c) => c.includes('auth_token=') && (c.includes('Expires=') || c.includes('Max-Age=0')))
+      expect(cleared).toBeTruthy()
+
+      // Subsequent profile access without any auth/cookies should be unauthorized (401)
+      const profileAfter = await agent
+        .get('/api/pengguna/profil')
+        .expect(401)
+
+      expect(profileAfter.body.success).toBe(false)
+    })
+  });
+
   describe('GET /api/auth/profile', () => {
     let testUser;
     let accessToken;
