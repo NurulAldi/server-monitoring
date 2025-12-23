@@ -34,6 +34,8 @@ const ruteAgregasi = require('./rute/ruteAgregasi');
 const ruteStatusServer = require('./rute/ruteStatusServer');
 const ruteAILogging = require('./rute/ruteAILogging');
 const ruteAutentikasi = require('./rute/ruteAutentikasi');
+const ruteMonitoring = require('./rute/ruteMonitoring');
+const ruteMonitoringLive = require('./rute/ruteMonitoringLive');
 
 // Import Socket.IO handlers
 const { setupSocketHandlers } = require('./socket/index');
@@ -154,6 +156,8 @@ useRoute('/api/agregasi', ruteAgregasi);
 useRoute('/api/status-server', ruteStatusServer);
 useRoute('/api/ai-analytics', ruteAILogging);
 useRoute('/api/auth', ruteAutentikasi);
+useRoute('/api/monitoring', ruteMonitoring);
+useRoute('/api/monitoring-live', ruteMonitoringLive);
 
 // 404 handler untuk route yang tidak ditemukan
 app.use('*', (req, res) => {
@@ -228,6 +232,11 @@ async function startServer() {
     // Start layanan monitoring status server
     await layananStatusServer.start();
     logSystemActivity('SERVER_STATUS_MONITORING_STARTED', { status: 'success' });
+
+    // Start monitoring live service (automated 3s loop with manual override)
+    const { monitoringLiveService } = require('./layanan/layananMonitoringLive');
+    monitoringLiveService.startAutomatedLoop();
+    logSystemActivity('MONITORING_LIVE_SERVICE_STARTED', { status: 'success' });
 
     // Start server with intelligent port fallback
     const START_PORT = parseInt(process.env.PORT, 10) || 5001;

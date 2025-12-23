@@ -22,7 +22,6 @@ interface DataCPU {
 
 interface PropsChartCPU {
   serverId?: string
-  height?: number
   showRealtime?: boolean
   criticalThreshold?: number
   warningThreshold?: number
@@ -30,7 +29,6 @@ interface PropsChartCPU {
 
 export function ChartCPU({
   serverId,
-  height = 200,
   showRealtime = true,
   criticalThreshold = 90,
   warningThreshold = 80
@@ -79,6 +77,9 @@ export function ChartCPU({
       })
     } else if (!showRealtime && data.length === 0) {
       setData(mockData)
+    } else if (socketData && socketData.length === 0 && data.length === 0) {
+      // No data available, show empty state
+      setData([])
     }
   }, [socketData, showRealtime, mockData, data.length])
 
@@ -94,48 +95,59 @@ export function ChartCPU({
       statusColor={statusColor}
       isLive={showRealtime && isOnline}
     >
-      <ResponsiveContainer width="100%" height={height} debounce={1}>
-        <AreaChart data={data} animationDuration={0} isAnimationActive={false}>
-          <defs>
-            <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={statusColor} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={statusColor} stopOpacity={0} />
-            </linearGradient>
-          </defs>
+      {data.length === 0 ? (
+        <div className="flex items-center justify-center h-full text-slate-500">
+          <div className="text-center">
+            <div className="text-lg font-medium mb-2">Loading...</div>
+            <div className="text-sm">Fetching CPU metrics</div>
+          </div>
+        </div>
+      ) : (
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%" debounce={1}>
+            <AreaChart data={data} animationDuration={0} isAnimationActive={false}>
+            <defs>
+              <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={statusColor} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={statusColor} stopOpacity={0} />
+              </linearGradient>
+            </defs>
 
-          <CartesianGrid {...teslaChartTheme.grid} vertical={false} />
+            <CartesianGrid {...teslaChartTheme.grid} vertical={false} />
 
-          <XAxis
-            dataKey="waktu"
-            {...teslaChartTheme.axis.tick}
-            axisLine={teslaChartTheme.axis.axisLine}
-            tickLine={false}
-          />
+            <XAxis
+              dataKey="waktu"
+              {...teslaChartTheme.axis.tick}
+              axisLine={teslaChartTheme.axis.axisLine}
+              tickLine={false}
+            />
 
-          <YAxis
-            {...teslaChartTheme.axis.tick}
-            axisLine={teslaChartTheme.axis.axisLine}
-            tickLine={false}
-            domain={[0, 100]}
-          />
+            <YAxis
+              {...teslaChartTheme.axis.tick}
+              axisLine={teslaChartTheme.axis.axisLine}
+              tickLine={false}
+              domain={[0, 100]}
+            />
 
-          <Tooltip
-            contentStyle={teslaChartTheme.tooltip.contentStyle}
-            labelStyle={teslaChartTheme.tooltip.labelStyle}
-            itemStyle={teslaChartTheme.tooltip.itemStyle}
-            formatter={(value: number) => [`${value.toFixed(1)}%`, 'CPU']}
-          />
+            <Tooltip
+              contentStyle={teslaChartTheme.tooltip.contentStyle}
+              labelStyle={teslaChartTheme.tooltip.labelStyle}
+              itemStyle={teslaChartTheme.tooltip.itemStyle}
+              formatter={(value: number) => [`${value.toFixed(1)}%`, 'CPU']}
+            />
 
-          <Area
-            type="monotone"
-            dataKey="cpu"
-            stroke={statusColor}
-            strokeWidth={2}
-            fill="url(#cpuGradient)"
-            isAnimationActive={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+            <Area
+              type="monotone"
+              dataKey="cpu"
+              stroke={statusColor}
+              strokeWidth={2}
+              fill="url(#cpuGradient)"
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+        </div>
+      )}
 
       <StatusLegend />
     </ChartWrapper>

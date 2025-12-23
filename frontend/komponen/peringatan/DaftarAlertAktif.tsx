@@ -82,11 +82,9 @@ export default function DaftarAlertAktif() {
               {/* Actions */}
               <div className="flex flex-col items-end gap-2">
                 <span className="text-xs text-slate-500">{alert.waktu}</span>
-                <Link href={`/dashboard/peringatan/${alert.id}`}>
                   <Tombol variant="outline" size="sm">
                     Detail
                   </Tombol>
-                </Link>
               </div>
             </div>
           </div>

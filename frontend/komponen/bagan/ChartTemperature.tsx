@@ -28,7 +28,6 @@ interface DataTemperature {
 
 interface PropsChartTemperature {
   serverId?: string
-  height?: number
   maxTemp?: number
   showGPU?: boolean
   showAmbient?: boolean
@@ -36,7 +35,6 @@ interface PropsChartTemperature {
 
 export function ChartTemperature({
   serverId,
-  height = 300,
   maxTemp = 80,
   showGPU = false,
   showAmbient = true
@@ -137,8 +135,9 @@ export function ChartTemperature({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={height}>
-        <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <div className="h-[300px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid
             strokeDasharray="3 3"
             stroke="#393c41"
@@ -254,6 +253,7 @@ export function ChartTemperature({
           />
         </AreaChart>
       </ResponsiveContainer>
+      </div>
 
       {/* Temperature stats */}
       {currentData && (

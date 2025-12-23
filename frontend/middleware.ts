@@ -9,14 +9,14 @@ const authRoutes = ['/autentikasi', '/autentikasi/registrasi']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  
+
   // Check if user has auth_token cookie (indicates active session)
   const authToken = request.cookies.get('auth_token')
   const isAuthenticated = !!authToken
 
   // Check if current route is protected
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
-  
+
   // Check if current route is auth page
   const isAuthRoute = authRoutes.some(route => pathname === route)
 
@@ -26,11 +26,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Redirect to dashboard if accessing auth pages while already logged in
-  if (isAuthRoute && isAuthenticated) {
-    const dashboardUrl = new URL('/dashboard', request.url)
-    return NextResponse.redirect(dashboardUrl)
-  }
+  // REMOVED: Redirect to dashboard if accessing auth pages while already logged in
+  // This causes infinite redirect loops when cookies are invalid/expired
+  // Let the auth pages handle authenticated users gracefully instead
 
   return NextResponse.next()
 }

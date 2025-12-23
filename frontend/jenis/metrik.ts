@@ -1,22 +1,18 @@
-// Type definitions untuk metrik
+// Type definitions untuk metrik - SIMPLIFIED: 4 Core Metrics Only
 export interface MetrikDasar {
   cpu: number
-  memori: number
+  ram: number
   disk: number
-  uptime: number
+  temperature: number
   timestamp: string
 }
 
 export interface MetrikDetail extends MetrikDasar {
-  cpuCore: number[]
-  memoriTotal: number
-  memoriDigunakan: number
-  diskTotal: number
-  diskDigunakan: number
-  jaringanRx: number
-  jaringanTx: number
-  proses: number
-  loadAverage: number[]
+  cpuCore?: number
+  ramTotal?: number
+  ramUsed?: number
+  diskTotal?: number
+  diskUsed?: number
 }
 
 export interface MetrikAgregat {
@@ -26,19 +22,21 @@ export interface MetrikAgregat {
   cpuRataRata: number
   cpuMaksimal: number
   cpuMinimal: number
-  memoriRataRata: number
-  memoriMaksimal: number
-  memoriMinimal: number
+  ramRataRata: number
+  ramMaksimal: number
+  ramMinimal: number
   diskRataRata: number
   diskMaksimal: number
   diskMinimal: number
-  uptimeRataRata: number
+  temperatureRataRata: number
+  temperatureMaksimal: number
+  temperatureMinimal: number
   totalDataPoint: number
 }
 
 export interface TrendMetrik {
   serverId: string
-  metrik: 'cpu' | 'memori' | 'disk' | 'uptime'
+  metrik: 'cpu' | 'ram' | 'disk' | 'temperature'
   periode: '1h' | '24h' | '7d' | '30d'
   data: {
     timestamp: string
@@ -50,7 +48,7 @@ export interface TrendMetrik {
 
 export interface BaselineMetrik {
   serverId: string
-  metrik: 'cpu' | 'memori' | 'disk'
+  metrik: 'cpu' | 'ram' | 'disk' | 'temperature'
   baseline: {
     rataRata: number
     standarDeviasi: number

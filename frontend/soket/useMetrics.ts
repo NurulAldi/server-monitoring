@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useSocket } from './SocketProvider'
+import { klienApi } from '@/layanan/klienApi'
 
 // Hook untuk real-time metrics data
 export function useMetrics(serverId?: string) {
@@ -10,54 +11,94 @@ export function useMetrics(serverId?: string) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!isConnected || !socket) return
+  // Fetch metrics from API
+  const fetchMetricsFromAPI = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const response = await klienApi.get('/api/monitoring/current')
+      if (response.data.success) {
+        const currentMetrics = response.data.data
+        const newMetrics: any = {}
 
-    const handleMetricsUpdate = (data: any) => {
-      setMetrics(prev => ({
-        ...prev,
-        [data.serverId || 'default']: {
-          ...prev[data.serverId || 'default'],
-          ...data,
-          timestamp: Date.now()
-        }
-      }))
-    }
+        currentMetrics.forEach((serverData: any) => {
+          newMetrics[serverData.serverId] = {
+            ...serverData.metrics,
+            timestamp: new Date(serverData.timestamp).getTime(),
+            status: 'online' // Assume online if we have metrics
+          }
+        })
 
-    const handleMetricsError = (errorData: any) => {
-      setError(errorData.message || 'Failed to load metrics')
+        setMetrics(newMetrics)
+      }
+    } catch (err) {
+      setError('Failed to fetch metrics from API')
+      console.error('API metrics fetch error:', err)
+    } finally {
       setIsLoading(false)
     }
+  }, [])
 
-    // Subscribe to metrics events
-    on('metrics:update', handleMetricsUpdate)
-    on('metrics:error', handleMetricsError)
+  useEffect(() => {
+    // Fetch from API first
+    fetchMetricsFromAPI()
 
-    // Join server-specific room if serverId provided
-    if (serverId) {
-      socket.emit('join:server', serverId)
-    }
+    // Set up polling every 30 seconds
+    const interval = setInterval(fetchMetricsFromAPI, 30000)
 
-    // Request initial metrics data
-    socket.emit('metrics:request', { serverId })
+    // Also listen to socket events if available
+    if (isConnected && socket) {
+      const handleMetricsUpdate = (data: any) => {
+        setMetrics(prev => ({
+          ...prev,
+          [data.serverId || 'default']: {
+            ...prev[data.serverId || 'default'],
+            ...data,
+            timestamp: Date.now()
+          }
+        }))
+      }
 
-    return () => {
-      off('metrics:update', handleMetricsUpdate)
-      off('metrics:error', handleMetricsError)
+      const handleMetricsError = (errorData: any) => {
+        setError(errorData.message || 'Failed to load metrics')
+        setIsLoading(false)
+      }
 
+      // Subscribe to metrics events
+      on('metrics:update', handleMetricsUpdate)
+      on('metrics:error', handleMetricsError)
+
+      // Join server-specific room if serverId provided
       if (serverId) {
-        socket.emit('leave:server', serverId)
+        socket.emit('join:server', serverId)
+      }
+
+      // Request initial metrics data
+      socket.emit('metrics:request', { serverId })
+
+      return () => {
+        clearInterval(interval)
+        off('metrics:update', handleMetricsUpdate)
+        off('metrics:error', handleMetricsError)
+
+        if (serverId) {
+          socket.emit('leave:server', serverId)
+        }
       }
     }
-  }, [socket, isConnected, serverId, on, off])
+
+    return () => clearInterval(interval)
+  }, [socket, isConnected, serverId, on, off, fetchMetricsFromAPI])
 
   const refreshMetrics = useCallback(() => {
     if (socket && isConnected) {
       setIsLoading(true)
       setError(null)
       socket.emit('metrics:request', { serverId })
+    } else {
+      fetchMetricsFromAPI()
     }
-  }, [socket, isConnected, serverId])
+  }, [socket, isConnected, serverId, fetchMetricsFromAPI])
 
   return {
     metrics,
@@ -72,20 +113,20 @@ export function useMetrics(serverId?: string) {
 export function useCPUMetrics(serverId?: string) {
   const { currentMetrics } = useMetrics(serverId)
 
-  const cpuData = currentMetrics?.cpu ? [{
-    waktu: new Date(currentMetrics.timestamp).toLocaleTimeString('id-ID', {
+  const cpuData = currentMetrics ? [{
+    waktu: new Date(currentMetrics.timestamp || Date.now()).toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     }),
-    usage: currentMetrics.cpu.usage || 0,
-    timestamp: currentMetrics.timestamp
+    usage: currentMetrics.cpu || 0,
+    timestamp: currentMetrics.timestamp || Date.now()
   }] : []
 
   return {
     data: cpuData,
-    currentUsage: currentMetrics?.cpu?.usage || 0,
-    isOnline: currentMetrics?.status === 'online'
+    currentUsage: currentMetrics?.cpu || 0,
+    isOnline: currentMetrics?.status === 'online' || !!currentMetrics
   }
 }
 
@@ -93,23 +134,28 @@ export function useCPUMetrics(serverId?: string) {
 export function useMemoryMetrics(serverId?: string) {
   const { currentMetrics } = useMetrics(serverId)
 
-  const memoryData = currentMetrics?.memory ? [{
-    waktu: new Date(currentMetrics.timestamp).toLocaleTimeString('id-ID', {
+  const memoryData = currentMetrics ? [{
+    waktu: new Date(currentMetrics.timestamp || Date.now()).toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     }),
-    used: currentMetrics.memory.used || 0,
-    available: currentMetrics.memory.available || 0,
-    total: currentMetrics.memory.total || 0,
-    usagePercent: currentMetrics.memory.usagePercent || 0,
-    timestamp: currentMetrics.timestamp
+    used: currentMetrics.memori || 0,
+    available: 100 - (currentMetrics.memori || 0), // Calculate available
+    total: 100, // Percentage based
+    usagePercent: currentMetrics.memori || 0,
+    timestamp: currentMetrics.timestamp || Date.now()
   }] : []
 
   return {
     data: memoryData,
-    currentMemory: currentMetrics?.memory,
-    isOnline: currentMetrics?.status === 'online'
+    currentMemory: {
+      used: currentMetrics?.memori || 0,
+      available: 100 - (currentMetrics?.memori || 0),
+      total: 100,
+      usagePercent: currentMetrics?.memori || 0
+    },
+    isOnline: currentMetrics?.status === 'online' || !!currentMetrics
   }
 }
 
@@ -122,23 +168,23 @@ export function useNetworkMetrics(serverId?: string) {
 
   // Point 5: Strict useMemo with primitive dependencies only
   const timestamp = currentMetrics?.timestamp || 0
-  const hasNetwork = Boolean(currentMetrics?.network)
-  
+  const hasNetwork = Boolean(currentMetrics?.jaringan)
+
   const networkData = useMemo(() => {
-    if (!hasNetwork || !currentMetrics?.network) return []
-    
+    if (!hasNetwork || !currentMetrics?.jaringan) return []
+
     return [{
       waktu: new Date(timestamp).toLocaleTimeString('id-ID', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit'
       }),
-      upload: currentMetrics.network.upload || 0,
-      download: currentMetrics.network.download || 0,
-      total: (currentMetrics.network.upload || 0) + (currentMetrics.network.download || 0),
-      packetsIn: currentMetrics.network.packetsIn || 0,
-      packetsOut: currentMetrics.network.packetsOut || 0,
-      errors: currentMetrics.network.errors || 0,
+      upload: currentMetrics.jaringan.uploadMbps || 0,
+      download: currentMetrics.jaringan.downloadMbps || 0,
+      total: (currentMetrics.jaringan.uploadMbps || 0) + (currentMetrics.jaringan.downloadMbps || 0),
+      packetsIn: 0, // Not available in API
+      packetsOut: 0, // Not available in API
+      errors: 0, // Not available in API
       timestamp
     }]
   }, [hasNetwork, timestamp]) // Primitive dependencies only
@@ -146,7 +192,7 @@ export function useNetworkMetrics(serverId?: string) {
   // Point 4: Effect audit - prevent infinite loop by checking timestamp change
   useEffect(() => {
     if (timestamp === lastTimestampRef.current) return // No change, skip update
-    
+
     const now = Date.now()
     if (now - lastUpdateRef.current > 1000) { // Throttle to 1 second
       setThrottledData(networkData)
@@ -157,8 +203,15 @@ export function useNetworkMetrics(serverId?: string) {
 
   return {
     data: throttledData,
-    currentNetwork: currentMetrics?.network,
-    isOnline: currentMetrics?.status === 'online'
+    currentNetwork: currentMetrics?.jaringan ? {
+      upload: currentMetrics.jaringan.uploadMbps || 0,
+      download: currentMetrics.jaringan.downloadMbps || 0,
+      total: (currentMetrics.jaringan.uploadMbps || 0) + (currentMetrics.jaringan.downloadMbps || 0),
+      packetsIn: 0,
+      packetsOut: 0,
+      errors: 0
+    } : null,
+    isOnline: currentMetrics?.status === 'online' || !!currentMetrics
   }
 }
 
@@ -167,25 +220,33 @@ export function useDiskMetrics(serverId?: string) {
   const { currentMetrics } = useMetrics(serverId)
 
   const diskData = currentMetrics?.disk ? [{
-    waktu: new Date(currentMetrics.timestamp).toLocaleTimeString('id-ID', {
+    waktu: new Date(currentMetrics.timestamp || Date.now()).toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     }),
-    used: currentMetrics.disk.used || 0,
-    available: currentMetrics.disk.available || 0,
-    total: currentMetrics.disk.total || 0,
-    usagePercent: currentMetrics.disk.usagePercent || 0,
-    readSpeed: currentMetrics.disk.readSpeed || 0,
-    writeSpeed: currentMetrics.disk.writeSpeed || 0,
-    iops: currentMetrics.disk.iops || 0,
-    timestamp: currentMetrics.timestamp
+    used: currentMetrics.disk || 0,
+    available: 100 - (currentMetrics.disk || 0), // Calculate available
+    total: 100, // Percentage based
+    usagePercent: currentMetrics.disk || 0,
+    readSpeed: 0, // Not available in API
+    writeSpeed: 0, // Not available in API
+    iops: 0, // Not available in API
+    timestamp: currentMetrics.timestamp || Date.now()
   }] : []
 
   return {
     data: diskData,
-    currentDisk: currentMetrics?.disk,
-    isOnline: currentMetrics?.status === 'online'
+    currentDisk: currentMetrics?.disk ? {
+      used: currentMetrics.disk || 0,
+      available: 100 - (currentMetrics.disk || 0),
+      total: 100,
+      usagePercent: currentMetrics.disk || 0,
+      readSpeed: 0,
+      writeSpeed: 0,
+      iops: 0
+    } : null,
+    isOnline: currentMetrics?.status === 'online' || !!currentMetrics
   }
 }
 
@@ -193,24 +254,13 @@ export function useDiskMetrics(serverId?: string) {
 export function useLoadMetrics(serverId?: string) {
   const { currentMetrics } = useMetrics(serverId)
 
-  const loadData = currentMetrics?.load ? [{
-    waktu: new Date(currentMetrics.timestamp).toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }),
-    load1: currentMetrics.load.load1 || 0,
-    load5: currentMetrics.load.load5 || 0,
-    load15: currentMetrics.load.load15 || 0,
-    cpuCount: currentMetrics.load.cpuCount || 4,
-    loadPercent: Math.round(((currentMetrics.load.load1 || 0) / (currentMetrics.load.cpuCount || 4)) * 100),
-    timestamp: currentMetrics.timestamp
-  }] : []
+  // Load data not available in current API, return empty
+  const loadData = []
 
   return {
     data: loadData,
-    currentLoad: currentMetrics?.load,
-    isOnline: currentMetrics?.status === 'online'
+    currentLoad: null,
+    isOnline: currentMetrics?.status === 'online' || !!currentMetrics
   }
 }
 
@@ -218,24 +268,12 @@ export function useLoadMetrics(serverId?: string) {
 export function useTemperatureMetrics(serverId?: string) {
   const { currentMetrics } = useMetrics(serverId)
 
-  const tempData = currentMetrics?.temperature ? [{
-    waktu: new Date(currentMetrics.timestamp).toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }),
-    cpu: currentMetrics.temperature.cpu || 0,
-    gpu: currentMetrics.temperature.gpu,
-    motherboard: currentMetrics.temperature.motherboard || 0,
-    disk: currentMetrics.temperature.disk || 0,
-    ambient: currentMetrics.temperature.ambient || 0,
-    maxTemp: currentMetrics.temperature.maxTemp || 80,
-    timestamp: currentMetrics.timestamp
-  }] : []
+  // Temperature data not available in current API, return empty
+  const tempData = []
 
   return {
     data: tempData,
-    currentTemp: currentMetrics?.temperature,
-    isOnline: currentMetrics?.status === 'online'
+    currentTemp: null,
+    isOnline: currentMetrics?.status === 'online' || !!currentMetrics
   }
 }

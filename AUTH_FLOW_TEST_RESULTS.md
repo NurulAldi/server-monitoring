@@ -149,6 +149,13 @@ The authentication service in the frontend has been updated to work with the new
 2. **Cookie Storage**: Token stored in HttpOnly cookie (`auth_token`)
 3. **Socket.IO Authentication**: Token passed via cookie for socket connections
 4. **Token Validation**: Middleware validates all required fields
+### Logout redirect behavior ✅
+- Fixed a race where the client redirected to `/autentikasi` before the server cleared the `auth_token` cookie, causing middleware to bounce the user back to `/dashboard`.
+- Verification steps:
+  1. Login and open Dashboard.
+  2. Click Logout -> Confirm.
+  3. Ensure the browser navigates to `/autentikasi?logged_out=1` and that `auth_token` cookie is removed.
+  4. Check server logs show POST `/api/pengguna/logout` with 200 status.
 
 ---
 

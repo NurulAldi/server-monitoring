@@ -30,7 +30,6 @@ interface DataDisk {
 
 interface PropsChartDisk {
   serverId?: string
-  height?: number
   totalDisk?: number // GB
   showIO?: boolean
   showIOPS?: boolean
@@ -38,7 +37,6 @@ interface PropsChartDisk {
 
 export function ChartDisk({
   serverId,
-  height = 300,
   totalDisk = 1000, // 1TB default
   showIO = false,
   showIOPS = false
@@ -144,7 +142,8 @@ const formatBytes = useCallback((bytes: number) => {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={height} debounce={1}>
+      <div className="h-[300px] w-full">
+        <ResponsiveContainer width="100%" height="100%" debounce={1}>
           <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid
             strokeDasharray="3 3"
@@ -300,6 +299,7 @@ const formatBytes = useCallback((bytes: number) => {
           )}
         </ComposedChart>
       </ResponsiveContainer>
+      </div>
 
       {/* Disk stats */}
       {currentData && (

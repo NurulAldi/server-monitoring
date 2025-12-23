@@ -28,7 +28,6 @@ interface DataMemory {
 
 interface PropsChartMemory {
   serverId?: string
-  height?: number
   mode?: 'donut' | 'area' | 'both'
   showBreakdown?: boolean
   showRealtime?: boolean
@@ -43,7 +42,6 @@ const MEMORY_COLORS = {
 
 export function ChartMemory({
   serverId,
-  height = 300,
   mode = 'both',
   showBreakdown = true,
   showRealtime = true
@@ -211,8 +209,9 @@ export function ChartMemory({
   )
 
   const renderAreaChart = useCallback(() => (
-    <ResponsiveContainer width="100%" height={height} debounce={1}>
-      <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }} isAnimationActive={false}>
+    <div className="h-[300px] w-full">
+      <ResponsiveContainer width="100%" height="100%" debounce={1}>
+        <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }} isAnimationActive={false}>
         <defs>
           <linearGradient id="usedGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={MEMORY_COLORS.used} stopOpacity={0.3}/>
@@ -281,7 +280,8 @@ export function ChartMemory({
         />
       </AreaChart>
     </ResponsiveContainer>
-  ), [data, height])
+    </div>
+  ), [data])
 
   return (
     <div className="w-full">

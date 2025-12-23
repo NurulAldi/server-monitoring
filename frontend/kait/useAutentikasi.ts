@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { layananAutentikasi } from '@/layanan/autentikasi'
+import { klienApi } from '@/layanan/klienApi'
 import { logger } from '@/utilitas/logger'
 import type { Pengguna, DataLogin, ResponsLogin } from '@/jenis/autentikasi'
 
@@ -58,21 +60,38 @@ export function useAutentikasi() {
     }
   }, [])
 
+  const router = useRouter()
+
   const logout = useCallback(async () => {
+    // Perform server logout first so middleware sees the logged-out state
+    setSedangMemuat(true)
+    setError(null)
+    logger.userAction('logout')
+
     try {
-      setSedangMemuat(true)
+      // Call server logout API (sends auth cookies via credentials: 'include')
       await layananAutentikasi.logout()
+
+      // Immediately purge all global states after successful API call
       setPengguna(null)
-      setError(null)
-      logger.userAction('logout')
+      klienApi.setToken(null) // Clear any remaining token
+      localStorage.removeItem('auth_token') // Clear backup token
+      sessionStorage.clear() // Clear any session data
+
+      // Hard redirect to login page (do not wait for other processes)
+      window.location.href = '/autentikasi?logged_out=1'
     } catch (err) {
+      // If server logout fails, still clear local state and redirect
       logger.error('Logout failed', err)
-      // Clear user anyway
       setPengguna(null)
+      klienApi.setToken(null)
+      localStorage.removeItem('auth_token')
+      sessionStorage.clear()
+      window.location.href = '/autentikasi?logged_out=1'
     } finally {
       setSedangMemuat(false)
     }
-  }, [])
+  }, [router])
 
   const refreshAuth = useCallback(async () => {
     try {

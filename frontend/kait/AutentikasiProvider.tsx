@@ -2,6 +2,7 @@
 
 import { createContext, useContext, ReactNode } from 'react'
 import { useAutentikasi } from '@/kait/useAutentikasi'
+import { klienApi } from '@/layanan/klienApi'
 
 interface AutentikasiContextType {
   user: any
@@ -30,9 +31,9 @@ export function AutentikasiProvider({ children }: AutentikasiProviderProps) {
     checkAuthStatus
   } = useAutentikasi()
 
-  // Get token from localStorage or service
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  const isAuthenticated = !!user && !!token
+  // Determine token and auth state consistently from API client
+  const token = typeof window !== 'undefined' ? klienApi.getToken() : null
+  const isAuthenticated = !!user
 
   const value: AutentikasiContextType = {
     user,

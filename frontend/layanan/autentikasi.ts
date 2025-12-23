@@ -69,14 +69,16 @@ export class LayananAutentikasi {
 
   async logout(): Promise<void> {
     try {
+      // Immediately clear client-side token to avoid sending stale Authorization header
+      klienApi.setToken(null)
+
+      // Attempt to notify server to clear the cookie/session. If it fails, we still consider the client logged out.
+      // credentials: 'include' is already set globally in klienApi
       await klienApi.post('/api/pengguna/logout')
-      // server will clear cookie; client clears any stored token for safety
-      klienApi.setToken(null)
-      logger.info('Logout successful')
+      logger.info('Logout successful (server acknowledged)')
     } catch (error) {
-      logger.error('Logout failed', error)
-      // Clear token anyway
-      klienApi.setToken(null)
+      logger.error('Logout failed (server may be unauthenticated or unreachable)', error)
+      // We already cleared client-side token; nothing else required
     }
   }
 

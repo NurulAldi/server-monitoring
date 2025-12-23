@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { Server, Cpu, HardDrive, Wifi } from 'lucide-react'
 import { Kartu, HeaderKartu, KontenKartu, FooterKartu } from '@/komponen/umum/Kartu'
 import StatusIndicator from '@/komponen/umum/StatusIndicator'
@@ -32,8 +31,8 @@ export function KartuServer({ server, className }: PropsKartuServer) {
   }
 
   return (
-    <Link href={`/dashboard/pemantauan/${server.id}`}>
-      <Kartu className={cn(statusClasses[server.status], 'cursor-pointer', className)}>
+    <div>
+      <Kartu className={cn(statusClasses[server.status], className)}>
         <HeaderKartu>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -160,7 +159,7 @@ export function KartuServer({ server, className }: PropsKartuServer) {
           </div>
         </FooterKartu>
       </Kartu>
-    </Link>
+    </div>
   )
 }
 

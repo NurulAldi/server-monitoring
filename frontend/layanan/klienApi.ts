@@ -98,9 +98,17 @@ class KlienApi {
   }
 
   private handleUnauthorized() {
-    logger.warn('Unauthorized access - clearing token')
+    logger.warn('Unauthorized access - clearing token and redirecting to login')
     this.setToken(null)
-    // TODO: Redirect to login page
+    // Clear any stored user data
+    localStorage.removeItem('auth_token')
+    sessionStorage.clear()
+    
+    // Only redirect if not already on login page
+    if (!window.location.pathname.startsWith('/autentikasi')) {
+      // Hard redirect to login page as fail-safe
+      window.location.href = '/autentikasi?unauthorized=1'
+    }
   }
 
   setToken(token: string | null) {

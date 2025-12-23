@@ -45,8 +45,7 @@ export const KONSTANTA = {
   ROUTE: {
     DASHBOARD: '/dashboard',
     PEMANTAUAN: '/dashboard/pemantauan',
-    PERINGATAN: '/dashboard/peringatan',
-    OBROLAN: '/dashboard/obrolan',
+
     PENGATURAN: '/dashboard/pengaturan',
     AUTENTIKASI: '/autentikasi',
   },

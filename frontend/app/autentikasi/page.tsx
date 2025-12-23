@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import FormulirMasuk from '@/komponen/formulir/FormulirMasuk'
 import { Card, CardBody } from '@/komponen/umum/Card'
+import LoginFeedback from '@/komponen/autentikasi/LoginFeedback'
 
 export const metadata: Metadata = {
   title: 'Masuk - Dashboard Monitoring',
@@ -19,6 +20,7 @@ export default function HalamanMasuk() {
             Masukkan kredensial Anda untuk melanjutkan
           </p>
         </div>
+        <LoginFeedback />
         <Card glass>
           <CardBody>
             <FormulirMasuk />

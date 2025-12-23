@@ -47,15 +47,6 @@ const metrikSchema = new mongoose.Schema({
       required: [true, 'Persentase CPU wajib diisi'],
       min: [0, 'Persentase CPU minimal 0'],
       max: [100, 'Persentase CPU maksimal 100']
-    },
-    core: {
-      type: Number,
-      min: [1, 'Jumlah core minimal 1'],
-      default: 1
-    },
-    frekuensi: {
-      type: Number, // dalam MHz
-      min: [0, 'Frekuensi CPU minimal 0']
     }
   },
 
@@ -76,10 +67,6 @@ const metrikSchema = new mongoose.Schema({
       type: Number, // dalam MB
       required: [true, 'Total memori wajib diisi'],
       min: [1, 'Total memori minimal 1']
-    },
-    tersedia: {
-      type: Number, // dalam MB
-      min: [0, 'Memori tersedia minimal 0']
     }
   },
 
@@ -100,72 +87,16 @@ const metrikSchema = new mongoose.Schema({
       type: Number, // dalam GB
       required: [true, 'Total disk wajib diisi'],
       min: [1, 'Total disk minimal 1']
-    },
-    tersedia: {
-      type: Number, // dalam GB
-      min: [0, 'Disk tersedia minimal 0']
-    },
-    kecepatanBaca: {
-      type: Number, // dalam MB/s
-      min: [0, 'Kecepatan baca disk minimal 0']
-    },
-    kecepatanTulis: {
-      type: Number, // dalam MB/s
-      min: [0, 'Kecepatan tulis disk minimal 0']
     }
   },
 
-  // Metrics Network
-  jaringan: {
-    downloadMbps: {
+  // Metrics Temperature
+  suhu: {
+    celsius: {
       type: Number,
-      default: 0,
-      min: [0, 'Kecepatan download minimal 0']
-    },
-    uploadMbps: {
-      type: Number,
-      default: 0,
-      min: [0, 'Kecepatan upload minimal 0']
-    },
-    latensiMs: {
-      type: Number,
-      default: 0,
-      min: [0, 'Latensi minimal 0']
-    },
-    paketHilangPersen: {
-      type: Number,
-      default: 0,
-      min: [0, 'Paket hilang minimal 0'],
-      max: [100, 'Paket hilang maksimal 100']
-    },
-    koneksiAktif: {
-      type: Number,
-      default: 0,
-      min: [0, 'Koneksi aktif minimal 0']
-    }
-  },
-
-  // Metrics Sistem Operasi
-  sistemOperasi: {
-    bebanRataRata: {
-      '1menit': { type: Number, min: [0, 'Load average minimal 0'] },
-      '5menit': { type: Number, min: [0, 'Load average minimal 0'] },
-      '15menit': { type: Number, min: [0, 'Load average minimal 0'] }
-    },
-    prosesAktif: {
-      type: Number,
-      min: [0, 'Proses aktif minimal 0'],
-      default: 0
-    },
-    threadAktif: {
-      type: Number,
-      min: [0, 'Thread aktif minimal 0'],
-      default: 0
-    },
-    uptimeDetik: {
-      type: Number,
-      min: [0, 'Uptime minimal 0'],
-      default: 0
+      required: [true, 'Suhu wajib diisi'],
+      min: [0, 'Suhu minimal 0'],
+      max: [150, 'Suhu maksimal 150']
     }
   },
 
@@ -323,44 +254,18 @@ metrikSchema.methods.tentukanStatusKesehatan = function() {
 
 /**
  * Method untuk mendapatkan metrics dalam format yang mudah dibaca
+ * SIMPLIFIED: Only returns 4 core metrics
  */
 metrikSchema.methods.formatUntukDisplay = function() {
   return {
     id: this._id,
     serverId: this.serverId,
     timestamp: this.timestampPengumpulan,
-    kesehatan: this.ringkasanKesehatan,
-    performa: {
-      cpu: {
-        persentase: this.cpu.persentase,
-        core: this.cpu.core,
-        frekuensi: this.cpu.frekuensi ? `${this.cpu.frekuensi} MHz` : 'N/A'
-      },
-      memori: {
-        persentase: this.memori.persentase,
-        digunakan: `${this.memori.digunakan} MB`,
-        total: `${this.memori.total} MB`,
-        tersedia: this.memori.tersedia ? `${this.memori.tersedia} MB` : 'N/A'
-      },
-      disk: {
-        persentase: this.disk.persentase,
-        digunakan: `${this.disk.digunakan} GB`,
-        total: `${this.disk.total} GB`,
-        tersedia: this.disk.tersedia ? `${this.disk.tersedia} GB` : 'N/A'
-      },
-      jaringan: {
-        download: `${this.jaringan.downloadMbps} Mbps`,
-        upload: `${this.jaringan.uploadMbps} Mbps`,
-        latensi: `${this.jaringan.latensiMs} ms`,
-        paketHilang: `${this.jaringan.paketHilangPersen}%`
-      }
-    },
-    sistem: {
-      loadAverage: this.sistemOperasi.bebanRataRata,
-      prosesAktif: this.sistemOperasi.prosesAktif,
-      uptime: this.sistemOperasi.uptimeDetik ?
-        `${Math.floor(this.sistemOperasi.uptimeDetik / 86400)} hari` : 'N/A'
-    },
+    kesehatan: this.statusKesehatan,
+    cpu: this.cpu.persentase,
+    ram: this.memori.persentase,
+    disk: this.disk.persentase,
+    temperature: this.suhu.celsius,
     metadata: this.metadataPengumpulan
   };
 };

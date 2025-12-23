@@ -4,18 +4,13 @@ import RingkasanDashboard from '@/komponen/pemantauan/RingkasanDashboard'
 import DaftarServer from '@/komponen/pemantauan/DaftarServer'
 import DaftarAlertAktif from '@/komponen/peringatan/DaftarAlertAktif'
 import { Container } from '@/komponen/umum/Container'
+import FloatingChatButton from '@/komponen/umum/FloatingChatButton'
 
-// Point 1: SSR Isolation - Dynamic imports with ssr: false
+// SIMPLIFIED: Only 4 core metric charts
 const ChartCPU = dynamic(() => import('@/komponen/bagan/ChartCPU'), { ssr: false })
 const ChartMemory = dynamic(() => import('@/komponen/bagan/ChartMemory'), { ssr: false })
-const ChartNetwork = dynamic(() => import('@/komponen/bagan/ChartNetwork'), { ssr: false })
 const ChartDisk = dynamic(() => import('@/komponen/bagan/ChartDisk'), { ssr: false })
-const ChartLoad = dynamic(() => import('@/komponen/bagan/ChartLoad'), { ssr: false })
 const ChartTemperature = dynamic(() => import('@/komponen/bagan/ChartTemperature'), { ssr: false })
-const ChartResponseTime = dynamic(() => import('@/komponen/bagan/ChartResponseTime'), { ssr: false })
-const ChartErrorRate = dynamic(() => import('@/komponen/bagan/ChartErrorRate'), { ssr: false })
-const ChartUptime = dynamic(() => import('@/komponen/bagan/ChartUptime'), { ssr: false })
-const ChartConnections = dynamic(() => import('@/komponen/bagan/ChartConnections'), { ssr: false })
 
 export const metadata: Metadata = {
   title: 'Dashboard - Monitoring Server',
@@ -65,88 +60,53 @@ export default function HalamanDashboard() {
           </div>
         </div>
 
-        {/* Visualisasi Data Health Server */}
+        {/* Visualisasi Data Health Server - SIMPLIFIED: 4 Core Metrics Only */}
         <div className="space-y-8">
           <div className="text-center space-y-2">
             <h2 className="text-display-md text-slate-900">
-              Visualisasi Data Health Server
+              Core Server Metrics
             </h2>
             <p className="text-body-lg text-slate-600 max-w-2xl mx-auto">
-              Monitoring real-time untuk semua metrik kesehatan server
+              Real-time monitoring: CPU, RAM, Disk, and Temperature
             </p>
           </div>
 
-          {/* System Performance Charts */}
+          {/* 4 Core Metrics Grid - Balanced 2x2 Layout */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            {/* CPU Usage */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-              <div key={`${dashboardId}-cpu-chart`} style={{ height: '400px', overflow: 'hidden' }}>
-                <ChartCPU height={300} />
+              <div key={`${dashboardId}-cpu-chart`} className="h-[400px] w-full overflow-hidden">
+                <ChartCPU />
               </div>
             </div>
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-              <div key={`${dashboardId}-memory-chart`} style={{ height: '400px', overflow: 'hidden' }}>
-                <ChartMemory height={300} />
-              </div>
-            </div>
-          </div>
 
-          {/* Network & Storage Charts */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            {/* RAM Usage */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-              <div key={`${dashboardId}-network-chart`} style={{ height: '400px', overflow: 'hidden' }}>
-                <ChartNetwork height={300} />
+              <div key={`${dashboardId}-memory-chart`} className="h-[400px] w-full overflow-hidden">
+                <ChartMemory />
               </div>
             </div>
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-              <div key={`${dashboardId}-disk-chart`} style={{ height: '400px', overflow: 'hidden' }}>
-                <ChartDisk height={300} />
-              </div>
-            </div>
-          </div>
 
-          {/* System Load & Temperature */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            {/* Disk Usage */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-              <div key={`${dashboardId}-load-chart`} style={{ height: '400px', overflow: 'hidden' }}>
-                <ChartLoad height={300} />
+              <div key={`${dashboardId}-disk-chart`} className="h-[400px] w-full overflow-hidden">
+                <ChartDisk />
               </div>
             </div>
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-              <div key={`${dashboardId}-temp-chart`} style={{ height: '400px', overflow: 'hidden' }}>
-                <ChartTemperature height={300} />
-              </div>
-            </div>
-          </div>
 
-          {/* Application Performance Charts */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            {/* Temperature */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-              <div key={`${dashboardId}-response-chart`} style={{ height: '400px', overflow: 'hidden' }}>
-                <ChartResponseTime height={300} />
-              </div>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-              <div key={`${dashboardId}-error-chart`} style={{ height: '400px', overflow: 'hidden' }}>
-                <ChartErrorRate height={300} />
-              </div>
-            </div>
-          </div>
-
-          {/* Service Availability Charts */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-              <div key={`${dashboardId}-uptime-chart`} style={{ height: '400px', overflow: 'hidden' }}>
-                <ChartUptime height={300} />
-              </div>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-              <div key={`${dashboardId}-connections-chart`} style={{ height: '400px', overflow: 'hidden' }}>
-                <ChartConnections height={300} />
+              <div key={`${dashboardId}-temp-chart`} className="h-[400px] w-full overflow-hidden">
+                <ChartTemperature />
               </div>
             </div>
           </div>
         </div>
         </Container>
+        {/* Keep floating chat button only on dashboard */}
+        <div aria-hidden className="fixed right-6 bottom-6 z-50">
+          <FloatingChatButton />
+        </div>
     </div>
   )
 }

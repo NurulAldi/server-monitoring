@@ -90,11 +90,7 @@ export default function DaftarServer() {
               >
                 {server.status.toUpperCase()}
               </span>
-              <Link href={`/dashboard/pemantauan/${server.id}`}>
-                <Tombol variant="outline" size="sm">
-                  Detail
-                </Tombol>
-              </Link>
+                <Tombol variant="outline" size="sm">Detail</Tombol>
             </div>
           </div>
 

@@ -5,6 +5,7 @@ const logger = require('./logger');
 
 /**
  * DESKRIPSI: Konstanta threshold untuk setiap parameter health server
+ * SIMPLIFIED: Only CPU, RAM, Disk, Temperature
  */
 const THRESHOLDS = {
   cpu: {
@@ -25,19 +26,11 @@ const THRESHOLDS = {
     critical: { min: 86, max: 95 },
     danger: { min: 96, max: 100 }
   },
-  jaringan: {
-    latensi: {
-      normal: { min: 0, max: 50 },
-      warning: { min: 51, max: 100 },
-      critical: { min: 101, max: 500 },
-      danger: { min: 501, max: Infinity }
-    },
-    throughput: {
-      normal: { min: 50, max: Infinity },
-      warning: { min: 10, max: 49 },
-      critical: { min: 1, max: 9 },
-      danger: { min: 0, max: 0 }
-    }
+  suhu: {
+    normal: { min: 0, max: 65 },
+    warning: { min: 66, max: 75 },
+    critical: { min: 76, max: 85 },
+    danger: { min: 86, max: 150 }
   }
 };
 
@@ -55,12 +48,13 @@ const STATUS_LEVELS = {
 
 /**
  * DESKRIPSI: Weights untuk criticality scoring
+ * SIMPLIFIED: Only 4 metrics
  */
 const PARAMETER_WEIGHTS = {
   cpu: 4,
   memori: 4,
   disk: 3,
-  jaringan: 2
+  suhu: 3
 };
 
 /**
@@ -85,22 +79,16 @@ const HYSTERESIS_CONFIG = {
 
 /**
  * Menentukan status parameter individual
- * @param {string} parameter - Nama parameter (cpu, memori, disk, jaringan)
+ * @param {string} parameter - Nama parameter (cpu, memori, disk, suhu)
  * @param {number} value - Nilai parameter
- * @param {string} subParameter - Sub-parameter untuk jaringan (latensi/throughput)
  * @returns {string} Status parameter (normal, warning, critical, danger)
  */
-function tentukanStatusParameter(parameter, value, subParameter = null) {
+function tentukanStatusParameter(parameter, value) {
   if (value === null || value === undefined || isNaN(value)) {
     return 'unknown';
   }
 
-  let thresholds;
-  if (parameter === 'jaringan') {
-    thresholds = THRESHOLDS.jaringan[subParameter];
-  } else {
-    thresholds = THRESHOLDS[parameter];
-  }
+  const thresholds = THRESHOLDS[parameter];
 
   if (!thresholds) {
     logger.warn(`Threshold tidak ditemukan untuk parameter: ${parameter}`);
@@ -127,6 +115,7 @@ function tentukanStatusParameter(parameter, value, subParameter = null) {
 
 /**
  * Menghitung weighted score untuk semua parameter
+ * SIMPLIFIED: Only 4 metrics
  * @param {Object} metrics - Object berisi semua parameter health
  * @returns {Object} Weighted score dan breakdown
  */
@@ -135,18 +124,14 @@ function hitungWeightedScore(metrics) {
     cpu: { value: metrics.cpu?.persentase || 0, status: 'unknown', weight: PARAMETER_WEIGHTS.cpu },
     memori: { value: metrics.memori?.persentase || 0, status: 'unknown', weight: PARAMETER_WEIGHTS.memori },
     disk: { value: metrics.disk?.persentase || 0, status: 'unknown', weight: PARAMETER_WEIGHTS.disk },
-    jaringan: {
-      latensi: { value: metrics.jaringan?.latensiMs || 0, status: 'unknown', weight: PARAMETER_WEIGHTS.jaringan / 2 },
-      throughput: { value: metrics.jaringan?.downloadMbps || 0, status: 'unknown', weight: PARAMETER_WEIGHTS.jaringan / 2 }
-    }
+    suhu: { value: metrics.suhu?.celsius || 0, status: 'unknown', weight: PARAMETER_WEIGHTS.suhu }
   };
 
   // Tentukan status setiap parameter
   breakdown.cpu.status = tentukanStatusParameter('cpu', breakdown.cpu.value);
   breakdown.memori.status = tentukanStatusParameter('memori', breakdown.memori.value);
   breakdown.disk.status = tentukanStatusParameter('disk', breakdown.disk.value);
-  breakdown.jaringan.latensi.status = tentukanStatusParameter('jaringan', breakdown.jaringan.latensi.value, 'latensi');
-  breakdown.jaringan.throughput.status = tentukanStatusParameter('jaringan', breakdown.jaringan.throughput.value, 'throughput');
+  breakdown.suhu.status = tentukanStatusParameter('suhu', breakdown.suhu.value);
 
   // Hitung weighted score
   const statusWeights = { normal: 1, warning: 2, critical: 3, danger: 4, unknown: 2 };
@@ -154,18 +139,9 @@ function hitungWeightedScore(metrics) {
   let totalWeight = 0;
 
   Object.values(breakdown).forEach(param => {
-    if (param.weight) {
-      // Parameter utama (cpu, memori, disk)
-      const weight = statusWeights[param.status] * param.weight;
-      totalScore += weight;
-      totalWeight += param.weight;
-    } else {
-      // Parameter jaringan (latensi dan throughput)
-      const latensiWeight = statusWeights[param.latensi.status] * param.latensi.weight;
-      const throughputWeight = statusWeights[param.throughput.status] * param.throughput.weight;
-      totalScore += latensiWeight + throughputWeight;
-      totalWeight += param.latensi.weight + param.throughput.weight;
-    }
+    const weight = statusWeights[param.status] * param.weight;
+    totalScore += weight;
+    totalWeight += param.weight;
   });
 
   const averageScore = totalWeight > 0 ? totalScore / totalWeight : 2;

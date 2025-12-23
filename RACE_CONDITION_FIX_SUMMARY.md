@@ -165,3 +165,18 @@ Socket Update → Deep Equality Check → Only Update if Different
 **Status:** ✅ **COMPLETE AND VERIFIED**  
 **Date:** December 22, 2025  
 **Result:** Dashboard race condition permanently eliminated
+
+---
+
+## Additional Fix: Logout redirect race condition 🔧
+
+**Issue:** When a user clicked logout, the client redirected to `/autentikasi` *before* the server cleared the session cookie. The middleware (which checks `auth_token` cookie) then detected an active session and redirected back to `/dashboard`, leaving the user stuck.
+
+**Fix applied:** Updated `useAutentikasi.logout` to await `layananAutentikasi.logout()` (server-side logout) before calling `router.push('/autentikasi?logged_out=1')`. Also tightened `AutentikasiProvider` to derive auth state from the API client (`klienApi.getToken()`) to avoid relying on a mismatched localStorage key.
+
+**Files changed:**
+- `frontend/kait/useAutentikasi.ts` ✅
+- `frontend/kait/AutentikasiProvider.tsx` ✅
+
+**Result:** Logout now reliably navigates to the login page; middleware no longer bounces the user back to the dashboard. ✅
+

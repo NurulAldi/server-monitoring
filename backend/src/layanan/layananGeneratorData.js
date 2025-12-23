@@ -29,8 +29,7 @@ class KondisiServer {
     this.trend = {
       cpu: 0,
       memori: 0,
-      disk: 0.001, // Growth rate 0.1% per jam
-      latensi: 0
+      disk: 0.001 // Growth rate 0.1% per jam
     };
     this.spikeActive = false;
     this.spikeEndTime = null;
@@ -41,12 +40,7 @@ class KondisiServer {
       cpu: this.randomBetween(10, 30),
       memori: this.randomBetween(30, 50),
       disk: this.randomBetween(40, 60),
-      latensi: this.randomBetween(5, 25),
-      loadAverage: this.randomBetween(0.5, 1.0),
-      throughput: this.randomBetween(50, 80),
-      packetLoss: this.randomBetween(0, 0.3),
-      processes: this.randomBetween(80, 120),
-      connections: this.randomBetween(20, 50)
+      suhu: this.randomBetween(40, 55)
     };
   }
 
@@ -89,20 +83,20 @@ class KondisiServer {
   }
 
   hitungSkorKesehatan(metrics) {
-    // Skor berdasarkan threshold breach
+    // Skor berdasarkan threshold breach - SIMPLIFIED to 4 metrics
     let skor = 0;
 
     if (metrics.cpu > THRESHOLD_DEFAULT.CPU_CRITICAL) skor += 30;
     else if (metrics.cpu > THRESHOLD_DEFAULT.CPU_WARNING) skor += 15;
 
-    if (metrics.memori > THRESHOLD_DEFAULT.MEMORI_CRITICAL) skor += 25;
-    else if (metrics.memori > THRESHOLD_DEFAULT.MEMORI_WARNING) skor += 12;
+    if (metrics.memori > THRESHOLD_DEFAULT.MEMORI_CRITICAL) skor += 30;
+    else if (metrics.memori > THRESHOLD_DEFAULT.MEMORI_WARNING) skor += 15;
 
-    if (metrics.disk > THRESHOLD_DEFAULT.DISK_CRITICAL) skor += 20;
-    else if (metrics.disk > THRESHOLD_DEFAULT.DISK_WARNING) skor += 10;
+    if (metrics.disk > THRESHOLD_DEFAULT.DISK_CRITICAL) skor += 25;
+    else if (metrics.disk > THRESHOLD_DEFAULT.DISK_WARNING) skor += 12;
 
-    if (metrics.latensi > THRESHOLD_DEFAULT.LATENSI_CRITICAL) skor += 15;
-    else if (metrics.latensi > THRESHOLD_DEFAULT.LATENSI_WARNING) skor += 8;
+    if (metrics.suhu > 85) skor += 15; // Critical temperature
+    else if (metrics.suhu > 75) skor += 8; // Warning temperature
 
     return skor;
   }
@@ -115,19 +109,16 @@ class KondisiServer {
     // Seasonal adjustment
     const seasonalFactor = this.getSeasonalFactor(jam, hari);
 
-    // Update trend berdasarkan kondisi
+    // Update trend berdasarkan kondisi - SIMPLIFIED
     if (this.kondisi === 'NORMAL') {
       this.trend.cpu = this.randomBetween(-0.5, 0.5) * seasonalFactor;
       this.trend.memori = this.randomBetween(-0.3, 0.3) * seasonalFactor;
-      this.trend.latensi = this.randomBetween(-2, 2);
     } else if (this.kondisi === 'WARNING') {
       this.trend.cpu = this.randomBetween(0.5, 1.5) * seasonalFactor;
       this.trend.memori = this.randomBetween(0.3, 1.0) * seasonalFactor;
-      this.trend.latensi = this.randomBetween(5, 15);
     } else if (this.kondisi === 'CRITICAL') {
       this.trend.cpu = this.randomBetween(1.0, 3.0) * seasonalFactor;
       this.trend.memori = this.randomBetween(0.8, 2.0) * seasonalFactor;
-      this.trend.latensi = this.randomBetween(10, 30);
     }
   }
 
@@ -202,58 +193,33 @@ class GeneratorDataMetrik {
       if (kondisiBaru === 'WARNING') statusKesehatan = 'Warning';
       else if (kondisiBaru === 'CRITICAL') statusKesehatan = 'Critical';
 
-      // Hitung uptime (dalam detik)
-      const uptimeDetik = this.calculateUptime(serverId);
-
-      // Buat objek metrik lengkap
+      // Buat objek metrik - SIMPLIFIED to 4 core metrics
       const dataMetrik = {
         serverId: serverId,
         timestampPengumpulan: new Date(),
 
         // CPU
         cpu: {
-          persentase: Math.min(100, Math.max(0, metrics.cpu)),
-          core: server.spesifikasi?.cpu?.core || 4,
-          frekuensi: server.spesifikasi?.cpu?.frekuensi || 3200
+          persentase: Math.min(100, Math.max(0, metrics.cpu))
         },
 
-        // Memory
+        // Memory (RAM)
         memori: {
           persentase: Math.min(100, Math.max(0, metrics.memori)),
           digunakan: Math.round((metrics.memori / 100) * (server.spesifikasi?.memori?.kapasitas || 8192)),
-          total: server.spesifikasi?.memori?.kapasitas || 8192,
-          tersedia: Math.round(((100 - metrics.memori) / 100) * (server.spesifikasi?.memori?.kapasitas || 8192))
+          total: server.spesifikasi?.memori?.kapasitas || 8192
         },
 
         // Disk
         disk: {
           persentase: Math.min(100, Math.max(0, metrics.disk)),
           digunakan: Math.round((metrics.disk / 100) * (server.spesifikasi?.disk?.kapasitas || 512000)),
-          total: server.spesifikasi?.disk?.kapasitas || 512000,
-          tersedia: Math.round(((100 - metrics.disk) / 100) * (server.spesifikasi?.disk?.kapasitas || 512000)),
-          kecepatanBaca: this.randomBetween(80, 150),
-          kecepatanTulis: this.randomBetween(60, 120)
+          total: server.spesifikasi?.disk?.kapasitas || 512000
         },
 
-        // Network
-        jaringan: {
-          downloadMbps: metrics.throughput,
-          uploadMbps: metrics.throughput * 0.8,
-          latensiMs: Math.max(0, metrics.latensi),
-          paketHilangPersen: Math.min(100, Math.max(0, metrics.packetLoss)),
-          koneksiAktif: Math.round(metrics.connections)
-        },
-
-        // Sistem Operasi
-        sistemOperasi: {
-          bebanRataRata: {
-            '1menit': metrics.loadAverage,
-            '5menit': metrics.loadAverage * 0.9,
-            '15menit': metrics.loadAverage * 0.8
-          },
-          prosesAktif: Math.round(metrics.processes),
-          threadAktif: Math.round(metrics.processes * 1.5),
-          uptimeDetik: uptimeDetik
+        // Temperature
+        suhu: {
+          celsius: Math.min(100, Math.max(20, metrics.suhu))
         },
 
         // Status kesehatan
@@ -263,7 +229,7 @@ class GeneratorDataMetrik {
         metadataPengumpulan: {
           durasiResponseMs: this.randomBetween(50, 200),
           metodePengumpulan: 'agent',
-          versiAgent: '1.0.0',
+          versiAgent: '2.0.0',
           zonaWaktu: 'Asia/Jakarta'
         }
       };
@@ -304,7 +270,7 @@ class GeneratorDataMetrik {
         cpu: metrics.cpu,
         memory: metrics.memori,
         disk: metrics.disk,
-        latency: metrics.latensi
+        temperature: metrics.suhu
       });
 
       return {
@@ -323,70 +289,54 @@ class GeneratorDataMetrik {
 
   /**
    * Generate nilai metrics berdasarkan kondisi server
+   * SIMPLIFIED: Only CPU, RAM, Disk, Temperature
    */
   generateMetrics(kondisiServer, spikeActive) {
     const baseline = kondisiServer.baseline;
     const kondisi = kondisiServer.kondisi;
 
     // Base values berdasarkan kondisi
-    let cpuBase, memoriBase, diskBase, latensiBase, loadBase, throughputBase, packetLossBase, processesBase, connectionsBase;
+    let cpuBase, memoriBase, diskBase, suhuBase;
 
     if (kondisi === 'NORMAL') {
       cpuBase = this.randomBetween(10, 50);
       memoriBase = this.randomBetween(30, 60);
       diskBase = baseline.disk + kondisiServer.trend.disk; // Gradual growth
-      latensiBase = this.randomBetween(5, 50);
-      loadBase = this.randomBetween(0.5, 1.5);
-      throughputBase = this.randomBetween(50, 100);
-      packetLossBase = this.randomBetween(0, 0.5);
-      processesBase = this.randomBetween(80, 150);
-      connectionsBase = this.randomBetween(20, 80);
+      suhuBase = this.randomBetween(40, 60); // Normal temperature range
     } else if (kondisi === 'WARNING') {
       cpuBase = this.randomBetween(60, 80);
       memoriBase = this.randomBetween(70, 85);
       diskBase = this.randomBetween(80, 90);
-      latensiBase = this.randomBetween(100, 300);
-      loadBase = this.randomBetween(2.0, 3.5);
-      throughputBase = this.randomBetween(20, 50);
-      packetLossBase = this.randomBetween(1, 3);
-      processesBase = this.randomBetween(150, 300);
-      connectionsBase = this.randomBetween(80, 200);
+      suhuBase = this.randomBetween(65, 75); // Elevated temperature
     } else if (kondisi === 'CRITICAL') {
       cpuBase = this.randomBetween(85, 100);
       memoriBase = this.randomBetween(90, 100);
       diskBase = this.randomBetween(95, 100);
-      latensiBase = this.randomBetween(500, 2000);
-      loadBase = this.randomBetween(4.0, 8.0);
-      throughputBase = this.randomBetween(1, 10);
-      packetLossBase = this.randomBetween(5, 20);
-      processesBase = this.randomBetween(300, 800);
-      connectionsBase = this.randomBetween(200, 1000);
+      suhuBase = this.randomBetween(80, 95); // High temperature
     }
 
     // Apply trend
     cpuBase += kondisiServer.trend.cpu;
     memoriBase += kondisiServer.trend.memori;
-    latensiBase += kondisiServer.trend.latensi;
 
     // Apply spike jika aktif
     if (spikeActive) {
       const spikeMultiplier = this.randomBetween(1.2, 1.5);
       cpuBase *= spikeMultiplier;
       memoriBase *= spikeMultiplier;
-      latensiBase *= spikeMultiplier;
-      loadBase *= spikeMultiplier;
-      packetLossBase *= spikeMultiplier;
+      suhuBase *= 1.1; // Temperature increases with spike
     }
 
     // Add random noise (±5-10%)
     const noise = 0.05;
     cpuBase += cpuBase * (Math.random() - 0.5) * noise * 2;
     memoriBase += memoriBase * (Math.random() - 0.5) * noise * 2;
-    latensiBase += latensiBase * (Math.random() - 0.5) * noise * 2;
+    suhuBase += suhuBase * (Math.random() - 0.5) * noise * 2;
 
     // Apply correlation (CPU dan Memory biasanya berhubungan)
     if (cpuBase > 70) {
       memoriBase = Math.min(100, memoriBase + this.randomBetween(5, 15));
+      suhuBase += this.randomBetween(5, 10); // High CPU increases temperature
     }
 
     // Seasonal adjustment
@@ -394,48 +344,14 @@ class GeneratorDataMetrik {
     if (jam >= 8 && jam <= 18) { // Business hours
       cpuBase *= 1.2;
       memoriBase *= 1.1;
-      connectionsBase *= 1.5;
     }
 
     return {
       cpu: Math.min(100, Math.max(0, cpuBase)),
       memori: Math.min(100, Math.max(0, memoriBase)),
       disk: Math.min(100, Math.max(0, diskBase)),
-      latensi: Math.max(0, latensiBase),
-      loadAverage: Math.max(0, loadBase),
-      throughput: Math.max(0, throughputBase),
-      packetLoss: Math.min(100, Math.max(0, packetLossBase)),
-      processes: Math.max(0, processesBase),
-      connections: Math.max(0, connectionsBase)
+      suhu: Math.min(100, Math.max(20, suhuBase)) // Temperature in Celsius
     };
-  }
-
-  /**
-   * Hitung uptime server (simulasi)
-   */
-  calculateUptime(serverId) {
-    const lastGenerated = this.lastGenerated.get(serverId);
-    if (!lastGenerated) {
-      // Server baru, uptime random 1-30 hari
-      const uptime = this.randomBetween(86400, 2592000); // 1-30 hari dalam detik
-      this.lastGenerated.set(serverId, new Date());
-      return uptime;
-    }
-
-    // Hitung selisih waktu sejak generate terakhir
-    const sekarang = new Date();
-    const selisihDetik = (sekarang - lastGenerated) / 1000;
-
-    // Update last generated
-    this.lastGenerated.set(serverId, sekarang);
-
-    // Simulasi restart (5% chance setiap hari)
-    if (Math.random() < 0.05 / 86400 * selisihDetik) {
-      return this.randomBetween(300, 3600); // Restart baru, 5 menit - 1 jam
-    }
-
-    // Continue uptime
-    return selisihDetik;
   }
 
   /**
@@ -457,7 +373,7 @@ class GeneratorDataMetrik {
   }
 
   /**
-   * Get baseline moving average
+   * Get baseline moving average - SIMPLIFIED to 4 metrics
    */
   getBaselineMovingAverage(serverId, hours = 24) {
     const history = this.baselineHistory.get(serverId) || [];
@@ -472,14 +388,14 @@ class GeneratorDataMetrik {
       cpu: acc.cpu + h.metrics.cpu,
       memori: acc.memori + h.metrics.memori,
       disk: acc.disk + h.metrics.disk,
-      latensi: acc.latensi + h.metrics.latensi
-    }), { cpu: 0, memori: 0, disk: 0, latensi: 0 });
+      suhu: acc.suhu + h.metrics.suhu
+    }), { cpu: 0, memori: 0, disk: 0, suhu: 0 });
 
     return {
       cpu: sum.cpu / recentHistory.length,
       memori: sum.memori / recentHistory.length,
       disk: sum.disk / recentHistory.length,
-      latensi: sum.latensi / recentHistory.length
+      suhu: sum.suhu / recentHistory.length
     };
   }
 

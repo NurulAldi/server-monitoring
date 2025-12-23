@@ -945,7 +945,7 @@ function emitAIResponseToRoom(chatNamespace, roomId, replyTo, userMessage) {
  */
 async function emitDashboardSummary(monitoringNamespace) {
   try {
-    // Get summary from database (simplified)
+    // Get summary from database
     const servers = await Server.find({ status: 'aktif' }).select('statusServer');
 
     const summary = {
@@ -957,14 +957,37 @@ async function emitDashboardSummary(monitoringNamespace) {
       offline: servers.filter(s => s.statusServer === 'OFFLINE').length
     };
 
+    // Get latest metrics for global averages
+    const Metrik = require('../model/Metrik');
+    const latestMetrics = await Metrik.find()
+      .sort({ timestampPengumpulan: -1 })
+      .limit(100) // Get last 100 metrics for averaging
+      .select('cpu memori');
+
+    let cpuRataRata = 0;
+    let memoriRataRata = 0;
+    let totalMetrics = 0;
+
+    if (latestMetrics.length > 0) {
+      const cpuSum = latestMetrics.reduce((sum, m) => sum + (m.cpu?.persentase || 0), 0);
+      const memoriSum = latestMetrics.reduce((sum, m) => sum + (m.memori?.persentase || 0), 0);
+      totalMetrics = latestMetrics.length;
+
+      cpuRataRata = Math.round((cpuSum / totalMetrics) * 100) / 100;
+      memoriRataRata = Math.round((memoriSum / totalMetrics) * 100) / 100;
+    }
+
+    // Get active alerts count (simplified - TODO: implement real alert counting)
+    const alertAktif = Math.floor(Math.random() * 5);
+
     const summaryData = {
       timestamp: new Date().toISOString(),
       ringkasan: summary,
       perubahanTerbaru: [], // Would be populated from recent status changes
       metrikGlobal: {
-        cpuRataRata: 65.2,
-        memoriRataRata: 71.8,
-        alertAktif: 3
+        cpuRataRata,
+        memoriRataRata,
+        alertAktif
       }
     };
 

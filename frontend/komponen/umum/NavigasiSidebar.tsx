@@ -12,6 +12,8 @@ import {
   Activity,
 } from 'lucide-react'
 import { useAutentikasi } from '@/kait/useAutentikasi'
+import ConfirmDialog from '@/komponen/umum/ConfirmDialog'
+import { useState } from 'react'
 
 const menuItems = [
   {
@@ -20,25 +22,29 @@ const menuItems = [
     icon: Home,
   },
   {
-    label: 'Server',
-    href: '/dashboard/pemantauan',
-    icon: Server,
-  },
-  {
-    label: 'Alert',
-    href: '/dashboard/peringatan',
-    icon: AlertTriangle,
-  },
-  {
-    label: 'Chat AI',
-    href: '/dashboard/obrolan',
-    icon: MessageSquare,
-  },
+    label: 'Keluar',
+    icon: LogOut,
+    action: 'logout'
+  }
 ]
 
 export default function NavigasiSidebar() {
   const pathname = usePathname()
   const { logout } = useAutentikasi()
+  const [konfirmasiTerbuka, setKonfirmasiTerbuka] = useState(false)
+
+  function handleLogoutClick() {
+    setKonfirmasiTerbuka(true)
+  }
+
+  function handleConfirmLogout() {
+    setKonfirmasiTerbuka(false)
+    logout()
+  }
+
+  function handleCancelLogout() {
+    setKonfirmasiTerbuka(false)
+  }
 
   return (
     <div className="bg-white border-r border-slate-200 w-64 min-h-screen flex flex-col">
@@ -60,7 +66,23 @@ export default function NavigasiSidebar() {
         <ul className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon
-            const isActive = pathname === item.href
+            const isActive = item.href ? pathname === item.href : false
+
+            // If the menu item is an action (logout), render a button instead of a Link
+            if (item.action === 'logout') {
+              return (
+                <li key={item.label}>
+                  <button
+                    onClick={handleLogoutClick}
+                    className={cn('nav-item w-full justify-start', 'hover:bg-red-50 hover:text-red-600')}
+                    aria-label="Logout"
+                  >
+                    <Icon className="w-5 h-5" />
+                    {item.label}
+                  </button>
+                </li>
+              )
+            }
 
             return (
               <li key={item.href}>
@@ -80,15 +102,13 @@ export default function NavigasiSidebar() {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-slate-200">
-        <button
-          onClick={logout}
-          className="nav-item w-full justify-start hover:bg-red-50 hover:text-red-600"
-        >
-          <LogOut className="w-5 h-5" />
-          Keluar
-        </button>
-      </div>
+      <ConfirmDialog
+        open={konfirmasiTerbuka}
+        title="Konfirmasi Logout"
+        message="Apakah Anda yakin ingin keluar dari akun? Anda akan diarahkan ke halaman login."
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
+      />
     </div>
   )
 }

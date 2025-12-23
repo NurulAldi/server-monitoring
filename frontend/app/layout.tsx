@@ -4,7 +4,6 @@ import './globals.css'
 import { AutentikasiProvider } from '@/kait/AutentikasiProvider'
 import { SocketProvider } from '@/soket/SocketProvider'
 import ConnectionStatus from '@/komponen/umum/ConnectionStatus'
-import FloatingChatButton from '@/komponen/umum/FloatingChatButton'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -31,7 +30,6 @@ export default function RootLayout({
               {children}
             </main>
             <ConnectionStatus />
-            <FloatingChatButton />
           </SocketProvider>
         </AutentikasiProvider>
       </body>

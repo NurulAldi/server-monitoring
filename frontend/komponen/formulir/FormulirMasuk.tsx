@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -24,7 +24,16 @@ export default function FormulirMasuk() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const registered = searchParams?.get('registered') === '1'
-  const { login } = useAutentikasi()
+  const { login, isAuthenticated, isLoading } = useAutentikasi()
+  const hasRedirected = useRef(false)
+
+  // Redirect authenticated users to dashboard (only once and after loading is complete)
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && !hasRedirected.current) {
+      hasRedirected.current = true
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, isLoading, router])
 
   const {
     register,
