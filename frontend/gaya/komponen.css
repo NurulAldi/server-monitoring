@@ -1,16 +1,16 @@
-/* Tesla-Inspired Minimalist Component Styles */
+/* Accessible Light Mode Component Styles */
 
 /* ===== CARDS ===== */
 .card {
-  @apply bg-deep-grey border border-neutral-700 rounded-xl transition-all duration-300 ease-in-out;
+  @apply bg-white border border-slate-200 rounded-xl transition-all duration-300 ease-in-out shadow-sm;
 }
 
 .card:hover {
-  @apply -translate-y-0.5 border-neutral-600;
+  @apply -translate-y-0.5 border-slate-300 shadow-md;
 }
 
 .card-header {
-  @apply p-8 border-b border-neutral-700;
+  @apply p-8 border-b border-slate-200;
 }
 
 .card-body {
@@ -18,24 +18,24 @@
 }
 
 .card-footer {
-  @apply p-8 border-t border-neutral-700 bg-neutral-800;
+  @apply p-8 border-t border-slate-200 bg-slate-50;
 }
 
-/* ===== STATUS CARDS (Minimalist) ===== */
+/* ===== STATUS CARDS ===== */
 .status-card-online {
-  @apply border-l-4 border-status-online;
+  @apply border-l-4 border-emerald-500;
 }
 
 .status-card-warning {
-  @apply border-l-4 border-warning-amber;
+  @apply border-l-4 border-amber-500;
 }
 
 .status-card-critical {
-  @apply border-l-4 border-accent-red;
+  @apply border-l-4 border-red-500;
 }
 
 .status-card-offline {
-  @apply border-l-4 border-neutral-600 opacity-60;
+  @apply border-l-4 border-slate-400 opacity-60;
 }
 
 /* ===== BUTTONS (Removed - now in Tombol.tsx via CVA) ===== */
@@ -46,40 +46,40 @@
 }
 
 .badge-online {
-  @apply bg-status-online/10 text-status-online border-status-online/20;
+  @apply bg-emerald-100 text-emerald-700 border-emerald-300;
 }
 
 .badge-warning {
-  @apply bg-warning-amber/10 text-warning-amber border-warning-amber/20;
+  @apply bg-amber-100 text-amber-700 border-amber-300;
 }
 
 .badge-critical {
-  @apply bg-accent-red/10 text-accent-red border-accent-red/20;
+  @apply bg-red-100 text-red-700 border-red-300;
 }
 
 .badge-offline {
-  @apply bg-neutral-600/10 text-neutral-500 border-neutral-600/20;
+  @apply bg-slate-100 text-slate-600 border-slate-300;
 }
 
 /* ===== INPUTS & FORMS ===== */
 .input {
-  @apply w-full px-4 py-3.5 bg-deep-grey border border-neutral-700 rounded-lg text-high-contrast text-base leading-6 transition-all duration-300 ease-in-out;
+  @apply w-full px-4 py-3.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-base leading-6 transition-all duration-300 ease-in-out;
 }
 
 .input:focus {
-  @apply outline-none border-accent-blue bg-neutral-800;
+  @apply outline-none border-blue-500 bg-slate-50 ring-2 ring-blue-500 ring-offset-2;
 }
 
 .input::placeholder {
-  @apply text-neutral-500;
+  @apply text-slate-400;
 }
 
 .input-error {
-  @apply border-accent-red;
+  @apply border-red-500;
 }
 
 .input-error:focus {
-  @apply border-accent-red;
+  @apply border-red-500 ring-red-500;
 }
 
 /* ===== ALERTS ===== */
@@ -88,24 +88,24 @@
 }
 
 .alert-critical {
-  @apply bg-accent-red/5 border-accent-red text-high-contrast;
+  @apply bg-red-50 border-red-500 text-red-900;
 }
 
 .alert-warning {
-  @apply bg-warning-amber/5 border-warning-amber text-high-contrast;
+  @apply bg-amber-50 border-amber-500 text-amber-900;
 }
 
 .alert-info {
-  @apply bg-accent-blue/5 border-accent-blue text-high-contrast;
+  @apply bg-blue-50 border-blue-500 text-blue-900;
 }
 
 .alert-success {
-  @apply bg-status-online/5 border-status-online text-high-contrast;
+  @apply bg-emerald-50 border-emerald-500 text-emerald-900;
 }
 
 /* ===== LOADING STATES ===== */
 .loading-skeleton {
-  @apply bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800;
+  @apply bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200;
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
 }
@@ -116,7 +116,7 @@
 }
 
 .spinner {
-  @apply w-4 h-4 border-2 border-neutral-700 border-t-accent-blue rounded-full;
+  @apply w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full;
   animation: spin 1s linear infinite;
 }
 
@@ -126,41 +126,37 @@
 }
 
 /* ===== METRICS DISPLAY ===== */
+/* Note: MetricCard now uses inline Tailwind classes for better maintainability */
+/* Keeping this CSS commented for reference:
 .metric-card {
-  @apply bg-deep-grey border border-neutral-700 rounded-2xl p-6 text-center transition-all duration-300 ease-in-out;
+  @apply bg-white border border-slate-200 rounded-xl p-6 shadow-sm transition-all duration-300;
 }
-
 .metric-card:hover {
-  @apply border-accent-blue -translate-y-0.5;
+  @apply shadow-md border-slate-300;
 }
-
 .metric-value {
-  @apply text-display-lg font-bold text-accent-blue mb-2;
-  text-shadow: 0 0 20px rgba(62, 106, 225, 0.2);
+  @apply text-3xl font-bold text-slate-900;
 }
-
 .metric-label {
-  @apply text-body-sm text-neutral-500 uppercase tracking-wider font-medium;
+  @apply text-sm font-medium text-slate-500 uppercase tracking-wide;
 }
+*/
 
 /* ===== PROGRESS BARS ===== */
 .progress-bar {
-  @apply w-full h-2 bg-neutral-800 rounded-lg overflow-hidden;
+  @apply w-full h-2 bg-slate-200 rounded-lg overflow-hidden;
 }
 
 .progress-fill {
-  @apply h-full bg-gradient-to-r from-accent-blue to-high-contrast rounded-lg transition-all duration-300 ease-in-out;
-  box-shadow: 0 0 12px rgba(62, 106, 225, 0.4);
+  @apply h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg transition-all duration-300 ease-in-out;
 }
 
 .progress-fill.warning {
-  @apply bg-gradient-to-r from-warning-amber to-accent-red;
-  box-shadow: 0 0 12px rgba(247, 201, 72, 0.4);
+  @apply bg-gradient-to-r from-amber-500 to-amber-600;
 }
 
 .progress-fill.critical {
-  @apply bg-accent-red;
-  box-shadow: 0 0 12px rgba(227, 25, 55, 0.4);
+  @apply bg-red-500;
 }
 
 /* ===== SERVER STATUS INDICATORS ===== */
@@ -169,34 +165,31 @@
 }
 
 .server-status-indicator.online {
-  @apply bg-status-online;
-  box-shadow: 0 0 12px rgba(0, 212, 72, 0.6);
+  @apply bg-emerald-500;
   animation: pulse-green 2s infinite;
 }
 
 .server-status-indicator.warning {
-  @apply bg-warning-amber;
-  box-shadow: 0 0 12px rgba(247, 201, 72, 0.6);
+  @apply bg-amber-500;
   animation: pulse-yellow 2s infinite;
 }
 
 .server-status-indicator.critical {
-  @apply bg-accent-red;
-  box-shadow: 0 0 12px rgba(227, 25, 55, 0.6);
+  @apply bg-red-500;
   animation: pulse-red 1.5s infinite;
 }
 
 .server-status-indicator.offline {
-  @apply bg-neutral-600;
+  @apply bg-slate-400;
 }
 
 /* ===== NAVIGATION ===== */
 .nav-item {
-  @apply flex items-center px-4 py-3 rounded-lg text-neutral-400 no-underline transition-all duration-300 ease-in-out mb-1;
+  @apply flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 no-underline transition-all duration-300 ease-in-out mb-1;
 }
 
 .nav-item:hover {
-  @apply bg-neutral-800 text-high-contrast;
+  @apply bg-slate-100 text-slate-900;
 }
 
 .nav-item.active {

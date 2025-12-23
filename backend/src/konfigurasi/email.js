@@ -47,7 +47,7 @@ function buatTransporter() {
   try {
     validasiKonfigurasiEmail();
 
-    transporter = nodemailer.createTransporter(SMTP_CONFIG);
+    transporter = nodemailer.createTransport(SMTP_CONFIG);
 
     // Test koneksi saat inisialisasi
     transporter.verify((error, success) => {
@@ -345,7 +345,7 @@ function templateEmailAlertServerBermasalah(data) {
           <!-- User Identity -->
           <div class="user-info">
             <h3>👤 Identitas Pengguna</h3>
-            <p><strong>Nama:</strong> ${user.namaPengguna}</p>
+            <p><strong>Email:</strong> ${user.email}</p>
             <p><strong>Email:</strong> ${user.email}</p>
             <p><strong>Waktu Penerimaan:</strong> ${new Date().toLocaleString('id-ID', {
               weekday: 'long',

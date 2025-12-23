@@ -8,9 +8,9 @@ export function ConnectionStatus() {
   if (isConnected) {
     return (
       <div className="fixed bottom-4 right-4 z-50">
-        <div className="flex items-center gap-2 bg-bg-secondary border border-bg-border rounded-lg px-3 py-2 shadow-lg">
-          <div className="w-2 h-2 rounded-full bg-status-online animate-pulse"></div>
-          <span className="text-body-small text-text-secondary">Connected</span>
+        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-lg">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span className="text-body-small text-slate-600">Connected</span>
         </div>
       </div>
     )
@@ -19,12 +19,12 @@ export function ConnectionStatus() {
   if (connectionError) {
     return (
       <div className="fixed bottom-4 right-4 z-50">
-        <div className="flex items-center gap-2 bg-bg-secondary border border-status-critical rounded-lg px-3 py-2 shadow-lg">
-          <div className="w-2 h-2 rounded-full bg-status-critical"></div>
+        <div className="flex items-center gap-2 bg-white border-2 border-red-500 rounded-lg px-3 py-2 shadow-lg">
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
           <div className="flex flex-col">
-            <span className="text-body-small text-status-critical font-semibold">Disconnected</span>
+            <span className="text-body-small text-red-600 font-semibold">Disconnected</span>
             {reconnectAttempts > 0 && (
-              <span className="text-xs text-text-muted">
+              <span className="text-xs text-slate-500">
                 Reconnecting... ({reconnectAttempts})
               </span>
             )}
@@ -36,9 +36,9 @@ export function ConnectionStatus() {
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      <div className="flex items-center gap-2 bg-bg-secondary border border-bg-border rounded-lg px-3 py-2 shadow-lg">
-        <div className="w-2 h-2 rounded-full bg-accent-tertiary animate-pulse"></div>
-        <span className="text-body-small text-text-secondary">Connecting...</span>
+      <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-lg">
+        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+        <span className="text-body-small text-slate-600">Connecting...</span>
       </div>
     </div>
   )

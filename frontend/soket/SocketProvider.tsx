@@ -43,7 +43,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
     }
 
     // Create socket connection
-    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001', {
+    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5001', {
       auth: {
         token: token
       },

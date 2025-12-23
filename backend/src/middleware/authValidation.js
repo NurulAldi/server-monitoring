@@ -31,15 +31,7 @@ class AuthValidation {
    */
   validateRegistration() {
     return [
-      body('namaPengguna')
-        .trim()
-        .isLength({
-          min: VALIDATION_RULES.USERNAME_MIN_LENGTH,
-          max: VALIDATION_RULES.USERNAME_MAX_LENGTH
-        })
-        .withMessage(`Username must be between ${VALIDATION_RULES.USERNAME_MIN_LENGTH} and ${VALIDATION_RULES.USERNAME_MAX_LENGTH} characters`)
-        .matches(/^[a-zA-Z0-9_]+$/)
-        .withMessage('Username can only contain letters, numbers, and underscores'),
+
 
       body('email')
         .isEmail()

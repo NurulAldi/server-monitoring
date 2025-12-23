@@ -2,19 +2,29 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
-const app = require('../../src/server');
+const { app } = require('../../src/server');
 const Pengguna = require('../../src/model/Pengguna');
 
-let mongoServer;
+let mongoServer; // only populated if this test creates a dedicated in-memory server (fallback)
 
 describe('Authentication Endpoints Integration Tests', () => {
   let server;
   let agent;
 
   beforeAll(async () => {
-    // Start in-memory MongoDB
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
+    // Prefer reusing the shared in-memory DB from global setup when available
+    let mongoUri = global.__MONGO_URI__;
+
+    // If not available, create a dedicated in-memory DB for this suite
+    if (!mongoUri) {
+      mongoServer = await MongoMemoryServer.create();
+      mongoUri = mongoServer.getUri();
+    }
+
+    // Ensure previous connections are closed before connecting to the test DB
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
 
     // Connect to test database
     await mongoose.connect(mongoUri, {
@@ -28,14 +38,23 @@ describe('Authentication Endpoints Integration Tests', () => {
   });
 
   afterAll(async () => {
-    // Close server and database
+    // Close server
     if (server) {
-      server.close();
+      await new Promise(resolve => server.close(resolve));
     }
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
+
+    // If this suite created its own in-memory server, fully stop and disconnect.
     if (mongoServer) {
+      await mongoose.connection.dropDatabase();
+      await mongoose.connection.close();
       await mongoServer.stop();
+    } else {
+      // We reused the global in-memory DB; just clear collections to avoid side effects
+      const collections = mongoose.connection.collections;
+      for (const key in collections) {
+        const collection = collections[key];
+        await collection.deleteMany({});
+      }
     }
   });
 
@@ -47,7 +66,6 @@ describe('Authentication Endpoints Integration Tests', () => {
   describe('POST /api/auth/register', () => {
     test('should register a new user successfully', async () => {
       const userData = {
-        namaPengguna: 'testuser',
         email: 'test@example.com',
         kataSandi: 'Password123',
         konfirmasiKataSandi: 'Password123'
@@ -61,14 +79,12 @@ describe('Authentication Endpoints Integration Tests', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.user).toHaveProperty('id');
       expect(response.body.data.user.email).toBe(userData.email);
-      expect(response.body.data.user.namaPengguna).toBe(userData.namaPengguna);
       expect(response.body.data.requiresVerification).toBe(true);
     });
 
     test('should reject registration with existing email', async () => {
       // Create existing user
       const existingUser = new Pengguna({
-        namaPengguna: 'existinguser',
         email: 'existing@example.com',
         kataSandiHash: 'hashedpassword',
         peran: 'user',
@@ -78,7 +94,6 @@ describe('Authentication Endpoints Integration Tests', () => {
       await existingUser.save();
 
       const userData = {
-        namaPengguna: 'newuser',
         email: 'existing@example.com', // Same email
         kataSandi: 'Password123',
         konfirmasiKataSandi: 'Password123'
@@ -95,7 +110,6 @@ describe('Authentication Endpoints Integration Tests', () => {
 
     test('should reject registration with invalid data', async () => {
       const invalidData = {
-        namaPengguna: 'tu', // Too short
         email: 'invalid-email',
         kataSandi: 'weak',
         konfirmasiKataSandi: 'different'
@@ -110,6 +124,36 @@ describe('Authentication Endpoints Integration Tests', () => {
       expect(response.body.error).toHaveProperty('details');
       expect(Array.isArray(response.body.error.details)).toBe(true);
     });
+
+    test('should return 500 if a stale unique namaPengguna index causes duplicate-key', async () => {
+      // Create a unique index on namaPengguna to simulate legacy/stale index
+      await Pengguna.collection.createIndex({ namaPengguna: 1 }, { unique: true, name: 'namaPengguna_1' });
+
+      try {
+        // Insert one user without namaPengguna
+        const first = new Pengguna({ email: 'dup1@example.com', kataSandiHash: 'hash', peran: 'user', statusAktif: true, emailTerverifikasi: true });
+        await first.save();
+
+        // Attempt to register another user (will cause duplicate key on namaPengguna if index exists)
+        const userData = {
+          email: 'dup2@example.com',
+          kataSandi: 'Password123',
+          konfirmasiKataSandi: 'Password123'
+        };
+
+        const res = await agent
+          .post('/api/auth/register')
+          .send(userData)
+          .expect(500);
+
+        expect(res.body.success).toBe(false);
+        expect(res.body.error).toHaveProperty('message');
+        expect(res.body.error.message).toMatch(/konfigurasi tidak konsisten|hubungi administrator/i);
+      } finally {
+        // Cleanup index regardless of test outcome
+        try { await Pengguna.collection.dropIndex('namaPengguna_1'); } catch (e) { /* ignore */ }
+      }
+    });
   });
 
   describe('POST /api/auth/login', () => {
@@ -119,7 +163,6 @@ describe('Authentication Endpoints Integration Tests', () => {
       // Create a test user
       const hashedPassword = await require('bcrypt').hash('Password123', 12);
       testUser = new Pengguna({
-        namaPengguna: 'testuser',
         email: 'test@example.com',
         kataSandiHash: hashedPassword,
         peran: 'user',
@@ -196,6 +239,38 @@ describe('Authentication Endpoints Integration Tests', () => {
       expect(response.body.success).toBe(false);
       expect(response.body.error.message).toBe('Akun belum diaktifkan');
     });
+
+    test('should login successfully even if namaPengguna is missing and not fail on save', async () => {
+      // Create a user record without namaPengguna to simulate legacy/missing field
+      const hashedPassword = await require('bcrypt').hash('Password123', 12);
+      const legacyUser = new Pengguna({
+        email: 'legacy@example.com',
+        kataSandiHash: hashedPassword,
+        peran: 'user',
+        statusAktif: true,
+        emailTerverifikasi: true
+      });
+      await legacyUser.save();
+
+      const loginData = {
+        email: 'legacy@example.com',
+        kataSandi: 'Password123'
+      };
+
+      const response = await agent
+        .post('/api/auth/login')
+        .send(loginData)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('user');
+      expect(response.body.data.user.email).toBe(loginData.email);
+
+      // Ensure the user document still doesn't require namaPengguna
+      const reloaded = await Pengguna.findById(legacyUser._id);
+      expect(reloaded).toBeTruthy();
+      expect(reloaded.namaPengguna).toBeUndefined();
+    });
   });
 
   describe('POST /api/auth/verify-email', () => {
@@ -212,7 +287,6 @@ describe('Authentication Endpoints Integration Tests', () => {
       );
 
       testUser = new Pengguna({
-        namaPengguna: 'testuser',
         email: 'test@example.com',
         kataSandiHash: 'hashedpassword',
         peran: 'user',
@@ -305,7 +379,6 @@ describe('Authentication Endpoints Integration Tests', () => {
     beforeEach(async () => {
       // Create test user
       testUser = new Pengguna({
-        namaPengguna: 'testuser',
         email: 'test@example.com',
         kataSandiHash: 'hashedpassword',
         peran: 'user',
@@ -336,7 +409,6 @@ describe('Authentication Endpoints Integration Tests', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.user.id).toBe(testUser._id.toString());
       expect(response.body.data.user.email).toBe(testUser.email);
-      expect(response.body.data.user.namaPengguna).toBe(testUser.namaPengguna);
       expect(response.body.data.user).not.toHaveProperty('kataSandiHash');
     });
 

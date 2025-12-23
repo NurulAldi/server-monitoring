@@ -12,6 +12,10 @@ beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
 
+  // Expose the URI and server to integration tests so they can reuse the same in-memory DB
+  global.__MONGO_URI__ = mongoUri;
+  global.__MONGO_SERVER__ = mongoServer;
+
   // Connect to the in-memory database
   await mongoose.connect(mongoUri, {
     useNewUrlParser: true,
@@ -48,6 +52,7 @@ afterAll(async () => {
 // Mock environment variables for testing
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
+process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/test-db';
 process.env.LOG_LEVEL = 'error'; // Reduce log noise during tests
 
@@ -55,7 +60,6 @@ process.env.LOG_LEVEL = 'error'; // Reduce log noise during tests
 global.testUtils = {
   // Helper to create test user
   createTestUser: (overrides = {}) => ({
-    namaPengguna: 'testuser',
     email: 'test@example.com',
     kataSandi: 'password123',
     jabatan: 'operator',

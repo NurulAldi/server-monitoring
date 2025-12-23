@@ -27,13 +27,13 @@ export default function DetailAlert({ idAlert }: PropsDetailAlert) {
   const getTingkatColor = (tingkat: string) => {
     switch (tingkat) {
       case 'kritis':
-        return 'text-accent-red bg-accent-red/10'
+        return 'text-red-600 bg-red-100'
       case 'Peringatan':
-        return 'text-warning-amber bg-warning-amber/10'
+        return 'text-amber-600 bg-amber-100'
       case 'Info':
-        return 'text-accent-blue bg-accent-blue/10'
+        return 'text-blue-600 bg-blue-100'
       default:
-        return 'text-neutral-400 bg-neutral-800'
+        return 'text-slate-600 bg-slate-100'
     }
   }
 

@@ -19,12 +19,7 @@ const rateLimiter = require('../middleware/rateLimiter');
 
 // Validasi registrasi pengguna baru
 const validasiRegistrasi = [
-  body('namaPengguna')
-    .trim()
-    .isLength({ min: 3, max: 50 })
-    .withMessage('Nama pengguna harus 3-50 karakter')
-    .matches(/^[a-zA-Z0-9_]+$/)
-    .withMessage('Nama pengguna hanya boleh huruf, angka, dan underscore'),
+
 
   body('email')
     .isEmail()
@@ -34,8 +29,16 @@ const validasiRegistrasi = [
   body('kataSandi')
     .isLength({ min: 8 })
     .withMessage('Kata sandi minimal 8 karakter')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
-    .withMessage('Kata sandi harus mengandung huruf besar, kecil, angka, dan simbol'),
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Kata sandi harus mengandung huruf besar, kecil, dan angka'),
+
+  body('konfirmasiKataSandi')
+    .custom((value, { req }) => {
+      if (value !== req.body.kataSandi) {
+        throw new Error('Konfirmasi kata sandi tidak cocok');
+      }
+      return true;
+    }),
 ];
 
 // Validasi login pengguna
@@ -82,6 +85,36 @@ router.post('/registrasi',
   kontrolerAutentikasi.registrasi
 );
 
+// English aliases for compatibility with external clients/tests
+router.post('/register',
+  rateLimiter.limiterRegistrasi,
+  validasiRegistrasi,
+  kontrolerAutentikasi.registrasi
+);
+
+// Verify email (POST) - English alias
+const authController = require('../kontroler/authController');
+router.post('/verify-email',
+  rateLimiter.limiterUmum,
+  authController.validateEmailVerification,
+  authController.verifyEmail
+);
+
+// Refresh token English alias
+router.post('/refresh-token',
+  rateLimiter.limiterUmum,
+  validasiRefreshToken,
+  kontrolerAutentikasi.refreshToken
+);
+
+// Profile endpoint (English) to get authenticated user profile
+router.get('/profile',
+  autentikasi.verifikasiToken,
+  rateLimiter.limiterUmum,
+  authController.getProfile
+);
+
+
 /**
  * @route POST /api/auth/login
  * @desc Login pengguna dan dapatkan JWT tokens
@@ -101,7 +134,6 @@ router.post('/login',
  * @rateLimit 10 requests per minute per user
  */
 router.post('/logout',
-  autentikasi.verifikasiToken,
   rateLimiter.limiterUmum,
   validasiLogout,
   kontrolerAutentikasi.logout

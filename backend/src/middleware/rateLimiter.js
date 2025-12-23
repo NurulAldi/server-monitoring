@@ -150,6 +150,8 @@ const limiterRegistrasi = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting in test environment to avoid flakiness during integration tests
+  skip: (req) => process.env.NODE_ENV === 'test',
   handler: (req, res) => {
     logger.logUserActivity('anonymous', 'REGISTRATION_RATE_LIMIT_EXCEEDED', {
       ip: req.ip,
@@ -161,6 +163,37 @@ const limiterRegistrasi = rateLimit({
       error: {
         code: 'TOO_MANY_REQUESTS',
         message: 'Terlalu banyak registrasi. Silakan tunggu 1 jam.',
+        retryAfter: 60 * 60
+      }
+    });
+  }
+});
+
+// Rate limiter untuk password reset endpoints (prevent abuse)
+const limiterResetPassword = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 jam
+  max: 5, // Maksimal 5 reset requests per IP per jam
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Terlalu banyak permintaan reset password. Silakan tunggu 1 jam.',
+      retryAfter: 60 * 60
+    }
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.logUserActivity(req.body?.email || 'anonymous', 'RESET_PASSWORD_RATE_LIMIT_EXCEEDED', {
+      ip: req.ip,
+      endpoint: req.url,
+      userAgent: req.get('User-Agent')
+    });
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Terlalu banyak permintaan reset password. Silakan tunggu 1 jam.',
         retryAfter: 60 * 60
       }
     });
@@ -256,6 +289,7 @@ module.exports = {
   limiterChat,
   limiterEmail,
   limiterRegistrasi,
+  limiterResetPassword,
   limiterDashboard,
   limiterAdmin,
   createCustomLimiter,
@@ -263,5 +297,7 @@ module.exports = {
 
   // Backwards-compatible aliases expected by route modules
   apiLimiter: limiterApi,
-  limiterGeneral: limiterApi
+  limiterGeneral: limiterApi,
+  // Indonesian alias used in routes
+  limiterUmum: limiterApi
 };

@@ -20,11 +20,13 @@ export function useAutentikasi() {
       setSedangMemuat(true)
       setError(null)
 
-      if (layananAutentikasi.isAuthenticated()) {
+      // Attempt to get profile using cookie-based session (if any)
+      try {
         const profil = await layananAutentikasi.getProfil()
         setPengguna(profil)
         logger.info('User authenticated', { userId: profil.id })
-      } else {
+      } catch (profileErr) {
+        // Not authenticated
         setPengguna(null)
       }
     } catch (err) {
@@ -47,7 +49,7 @@ export function useAutentikasi() {
       logger.userAction('login', { userId: response.pengguna.id })
       return response
     } catch (err: any) {
-      const errorMessage = err.response?.data?.pesan || 'Login gagal'
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'Login gagal'
       setError(errorMessage)
       logger.error('Login failed', err)
       throw err

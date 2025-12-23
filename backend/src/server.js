@@ -14,6 +14,7 @@ const cookieParser = require('cookie-parser');
 
 // Import konfigurasi dan utilitas
 const { connectDatabase } = require('./konfigurasi/database');
+const { dropNamaPenggunaIndexIfExists } = require('./konfigurasi/migrations');
 const { logger, logError, logSystemActivity } = require('./utilitas/logger');
 const { HTTP_STATUS, ERROR_CODE } = require('./utilitas/konstanta');
 
@@ -32,6 +33,7 @@ const ruteKonfigurasi = require('./rute/ruteKonfigurasi');
 const ruteAgregasi = require('./rute/ruteAgregasi');
 const ruteStatusServer = require('./rute/ruteStatusServer');
 const ruteAILogging = require('./rute/ruteAILogging');
+const ruteAutentikasi = require('./rute/ruteAutentikasi');
 
 // Import Socket.IO handlers
 const { setupSocketHandlers } = require('./socket/index');
@@ -151,6 +153,7 @@ useRoute('/api/konfigurasi', ruteKonfigurasi);
 useRoute('/api/agregasi', ruteAgregasi);
 useRoute('/api/status-server', ruteStatusServer);
 useRoute('/api/ai-analytics', ruteAILogging);
+useRoute('/api/auth', ruteAutentikasi);
 
 // 404 handler untuk route yang tidak ditemukan
 app.use('*', (req, res) => {
@@ -193,6 +196,14 @@ async function startServer() {
     // Koneksi ke database
     await connectDatabase();
     logger.logSystemActivity('DATABASE_CONNECTED', { status: 'success' });
+
+    // Run migrations (idempotent) to clean stale indexes
+    try {
+      await dropNamaPenggunaIndexIfExists();
+    } catch (err) {
+      logError(err, { code: 'MIGRATION_DROP_NAMA_PENGGUNA_FAILED' });
+      // Do not abort startup — admin should investigate
+    }
 
     // Setup kondisi alert default
     try {

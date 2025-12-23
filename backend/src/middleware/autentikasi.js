@@ -9,10 +9,15 @@ const Pengguna = require('../model/Pengguna');
 // Middleware untuk verifikasi JWT token
 function autentikasiToken(req, res, next) {
   try {
-    // Ambil token dari header Authorization
+    // Ambil token dari header Authorization atau cookie
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.startsWith('Bearer ') ?
+    let token = authHeader && authHeader.startsWith('Bearer ') ?
       authHeader.substring(7) : null;
+
+    // Fallback to auth_token cookie if no Authorization header
+    if (!token && req.cookies && req.cookies.auth_token) {
+      token = req.cookies.auth_token;
+    }
 
     if (!token) {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
@@ -62,8 +67,9 @@ function autentikasiToken(req, res, next) {
       });
     }
 
-    // Validasi payload token
-    if (!decoded.userId || !decoded.email || !decoded.peran) {
+    // Validasi payload token (support both `peran` and `role` payload keys)
+    const role = decoded.peran || decoded.role;
+    if (!decoded.userId || !decoded.email || !role) {
       logger.logSecurityEvent('MALFORMED_TOKEN_PAYLOAD', {
         decoded: decoded,
         ip: req.ip,
@@ -84,9 +90,11 @@ function autentikasiToken(req, res, next) {
     req.user = {
       userId: decoded.userId,
       email: decoded.email,
-      peran: decoded.peran,
-      namaPengguna: decoded.namaPengguna
+      peran: role
     };
+
+    // Debug log decoded token during tests (error level to ensure visibility)
+    logger.error('autentikasi token decoded', { decoded });
 
     // Log successful authentication
     logger.logUserActivity(decoded.userId, 'TOKEN_VERIFIED', {
@@ -236,7 +244,7 @@ function cekOwnership(resourceOwnerId) {
 // Middleware untuk optional authentication (endpoint bisa diakses tanpa login)
 function autentikasiOpsional(req, res, next) {
   try {
-    const token = req.cookies.token;
+    const token = req.cookies.auth_token;
 
     if (token) {
       // Ada token, verify dan attach user data

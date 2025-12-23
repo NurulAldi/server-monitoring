@@ -22,6 +22,9 @@ async function kirimEmailVerifikasi(email, namaPengguna, tokenVerifikasi) {
   try {
     const transporter = dapatkanTransporter();
 
+    // Derive display name from provided namaPengguna or fall back to email prefix
+    const displayName = namaPengguna || (email ? email.split('@')[0] : 'Pengguna');
+
     // Buat link verifikasi
     const linkVerifikasi = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${tokenVerifikasi}`;
 
@@ -49,7 +52,7 @@ async function kirimEmailVerifikasi(email, namaPengguna, tokenVerifikasi) {
           </div>
 
           <div class="content">
-            <h3>Halo ${namaPengguna}!</h3>
+            <h3>Halo ${displayName}!</h3>
             <p>Terima kasih telah mendaftar di Sistem Monitoring Server.</p>
             <p>Silakan klik tombol di bawah ini untuk memverifikasi email Anda:</p>
 
@@ -90,7 +93,7 @@ async function kirimEmailVerifikasi(email, namaPengguna, tokenVerifikasi) {
     logger.logEmailActivity('VERIFICATION_EMAIL_SENT', {
       recipient: email,
       messageId: info.messageId,
-      userName: namaPengguna
+      userName: displayName
     });
 
     return {
@@ -104,7 +107,7 @@ async function kirimEmailVerifikasi(email, namaPengguna, tokenVerifikasi) {
     // Log error
     logger.logError('EMAIL_VERIFICATION_SEND_FAILED', error, {
       recipient: email,
-      userName: namaPengguna
+      userName: displayName
     });
 
     throw new Error(`Gagal kirim email verifikasi: ${error.message}`);
@@ -124,6 +127,9 @@ async function kirimEmailVerifikasi(email, namaPengguna, tokenVerifikasi) {
 async function kirimEmailResetPassword(email, namaPengguna, tokenReset) {
   try {
     const transporter = dapatkanTransporter();
+
+    // Derive display name
+    const displayName = namaPengguna || (email ? email.split('@')[0] : 'Pengguna');
 
     // Buat link reset password
     const linkReset = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${tokenReset}`;
@@ -151,7 +157,7 @@ async function kirimEmailResetPassword(email, namaPengguna, tokenReset) {
           </div>
 
           <div class="content">
-            <h3>Halo ${namaPengguna}!</h3>
+            <h3>Halo ${displayName}!</h3>
             <p>Anda menerima email ini karena ada permintaan reset password untuk akun Anda.</p>
             <p>Klik tombol di bawah ini untuk membuat password baru:</p>
 
@@ -192,7 +198,7 @@ async function kirimEmailResetPassword(email, namaPengguna, tokenReset) {
     logger.logEmailActivity('PASSWORD_RESET_EMAIL_SENT', {
       recipient: email,
       messageId: info.messageId,
-      userName: namaPengguna
+      userName: displayName
     });
 
     return {
@@ -206,7 +212,7 @@ async function kirimEmailResetPassword(email, namaPengguna, tokenReset) {
     // Log error
     logger.logError('EMAIL_RESET_PASSWORD_SEND_FAILED', error, {
       recipient: email,
-      userName: namaPengguna
+      userName: displayName
     });
 
     throw new Error(`Gagal kirim email reset password: ${error.message}`);
@@ -315,6 +321,7 @@ async function kirimEmailAlertServer(penerima, dataAlert) {
 async function kirimEmailRingkasanHarian(email, namaPengguna, dataServer) {
   try {
     const transporter = dapatkanTransporter();
+    const displayName = namaPengguna || (email ? email.split('@')[0] : 'Pengguna');
 
     // Hitung statistik
     const totalServer = dataServer.length;
@@ -356,7 +363,7 @@ async function kirimEmailRingkasanHarian(email, namaPengguna, dataServer) {
           </div>
 
           <div class="content">
-            <h3>Halo ${namaPengguna}!</h3>
+            <h3>Halo ${displayName}!</h3>
             <p>Berikut adalah ringkasan kondisi server Anda hari ini:</p>
 
             <div class="stats">
@@ -413,7 +420,7 @@ async function kirimEmailRingkasanHarian(email, namaPengguna, dataServer) {
     logger.logEmailActivity('DAILY_SUMMARY_EMAIL_SENT', {
       recipient: email,
       messageId: info.messageId,
-      userName: namaPengguna,
+      userName: displayName,
       serverCount: totalServer,
       healthyCount: serverSehat,
       warningCount: serverWarning,
@@ -431,7 +438,7 @@ async function kirimEmailRingkasanHarian(email, namaPengguna, dataServer) {
     // Log error
     logger.logError('EMAIL_DAILY_SUMMARY_SEND_FAILED', error, {
       recipient: email,
-      userName: namaPengguna,
+      userName: displayName,
       serverCount: dataServer.length
     });
 
@@ -452,6 +459,7 @@ async function kirimEmailRingkasanHarian(email, namaPengguna, dataServer) {
 async function kirimEmailRekomendasiAI(email, namaPengguna, dataRekomendasi) {
   try {
     const transporter = dapatkanTransporter();
+    const displayName = namaPengguna || (email ? email.split('@')[0] : 'Pengguna');
 
     const { server, rekomendasi, prioritas, kategori } = dataRekomendasi;
 
@@ -485,7 +493,7 @@ async function kirimEmailRekomendasiAI(email, namaPengguna, dataRekomendasi) {
           </div>
 
           <div class="content">
-            <h3>Halo ${namaPengguna}!</h3>
+            <h3>Halo ${displayName}!</h3>
             <p>Sistem AI kami telah menganalisis performa server Anda dan memberikan rekomendasi berikut:</p>
 
             <div class="recommendation priority-${prioritas.toLowerCase()}">
@@ -541,7 +549,7 @@ async function kirimEmailRekomendasiAI(email, namaPengguna, dataRekomendasi) {
     logger.logEmailActivity('AI_RECOMMENDATION_EMAIL_SENT', {
       recipient: email,
       messageId: info.messageId,
-      userName: namaPengguna,
+      userName: displayName,
       serverId: server._id,
       serverName: server.nama,
       recommendationCategory: kategori,
@@ -559,7 +567,7 @@ async function kirimEmailRekomendasiAI(email, namaPengguna, dataRekomendasi) {
     // Log error
     logger.logError('EMAIL_AI_RECOMMENDATION_SEND_FAILED', error, {
       recipient: email,
-      userName: namaPengguna,
+      userName: displayName,
       serverData: dataRekomendasi.server
     });
 
@@ -580,6 +588,7 @@ async function kirimEmailRekomendasiAI(email, namaPengguna, dataRekomendasi) {
 async function kirimEmailRecoveryServer(email, namaPengguna, dataRecovery) {
   try {
     const transporter = dapatkanTransporter();
+    const displayName = namaPengguna || (email ? email.split('@')[0] : 'Pengguna');
 
     const { server, waktuRecovery, durasiDown, metricsTerakhir } = dataRecovery;
 
@@ -607,7 +616,7 @@ async function kirimEmailRecoveryServer(email, namaPengguna, dataRecovery) {
           </div>
 
           <div class="content">
-            <h3>Halo ${namaPengguna}!</h3>
+            <h3>Halo ${displayName}!</h3>
             <p>Server Anda telah kembali ke kondisi normal.</p>
 
             <div class="recovery-info">
@@ -648,7 +657,7 @@ async function kirimEmailRecoveryServer(email, namaPengguna, dataRecovery) {
     logger.logEmailActivity('SERVER_RECOVERY_EMAIL_SENT', {
       recipient: email,
       messageId: info.messageId,
-      userName: namaPengguna,
+      userName: displayName,
       serverId: server._id,
       serverName: server.nama,
       recoveryTime: waktuRecovery,
@@ -666,7 +675,7 @@ async function kirimEmailRecoveryServer(email, namaPengguna, dataRecovery) {
     // Log error
     logger.logError('EMAIL_SERVER_RECOVERY_SEND_FAILED', error, {
       recipient: email,
-      userName: namaPengguna,
+      userName: displayName,
       serverData: dataRecovery.server
     });
 

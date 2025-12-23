@@ -9,12 +9,17 @@ import { z } from 'zod'
 import { Tombol } from '@/komponen/umum/Tombol'
 import { Input } from '@/komponen/umum/Input'
 import { Label } from '@/komponen/umum/Label'
-import { useAutentikasi } from '@/kait/useAutentikasi'
+import { layananAutentikasi } from '@/layanan/autentikasi'
+import { KONSTANTA } from '@/utilitas/konstanta'
 
 const skemaRegistrasi = z.object({
   nama: z.string().min(2, 'Nama minimal 2 karakter'),
   email: z.string().email('Email tidak valid'),
-  kataSandi: z.string().min(6, 'Kata sandi minimal 6 karakter'),
+  // Align password rules with backend (min 8, must include uppercase, lowercase and number)
+  kataSandi: z
+    .string()
+    .min(8, 'Kata sandi minimal 8 karakter')
+    .regex(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Kata sandi harus mengandung huruf besar, huruf kecil, dan angka'),
   konfirmasiKataSandi: z.string(),
 }).refine((data) => data.kataSandi === data.konfirmasiKataSandi, {
   message: 'Konfirmasi kata sandi tidak cocok',
@@ -26,8 +31,8 @@ type DataRegistrasi = z.infer<typeof skemaRegistrasi>
 export default function FormulirRegistrasi() {
   const [sedangMemuat, setSedangMemuat] = useState(false)
   const [kesalahan, setKesalahan] = useState('')
+  const [sukses, setSukses] = useState('')
   const router = useRouter()
-  const { login } = useAutentikasi() // Use login instead of registrasi for now
 
   const {
     register,
@@ -40,15 +45,34 @@ export default function FormulirRegistrasi() {
   const onSubmit = async (data: DataRegistrasi) => {
     setSedangMemuat(true)
     setKesalahan('')
+    setSukses('')
 
     try {
-      // TODO: Implement proper registration API
-      // await registrasi(data.nama, data.email, data.kataSandi)
-      console.log('Registration data:', data)
-      // For now, redirect or show success message
-      router.push('/autentikasi')
-    } catch (error) {
-      setKesalahan('Registrasi gagal. Silakan coba lagi.')
+      // Call backend registration endpoint (send 'nama' to match backend validator)
+      await layananAutentikasi.register({ nama: data.nama, email: data.email, kataSandi: data.kataSandi })
+      // Show success and redirect to login with success flag
+      setSukses('Registrasi berhasil. Silakan masuk menggunakan akun Anda.')
+      router.push('/autentikasi?registered=1')
+    } catch (err: any) {
+      // Handle network errors separately for actionable feedback
+      const resp = err?.response?.data
+      let msg = 'Registrasi gagal. Silakan coba lagi.'
+
+      if (!err?.response) {
+        // Try to extract attempted URL from axios error, fallback to a sensible default
+        const attempted = err?.attemptedURL || (err?.config ? `${(err.config.baseURL||'').replace(/\/$/,'')}${err.config.url||''}` : `${KONSTANTA.API_BASE_URL.replace(/\/$/,'')}/api/pengguna/registrasi`)
+        msg = `Tidak dapat terhubung ke server di ${attempted}. Pastikan backend berjalan dan variabel NEXT_PUBLIC_API_URL sudah benar.`
+      } else if (resp?.error?.message) {
+        msg = resp.error.message
+        if (Array.isArray(resp.error.details) && resp.error.details.length > 0) {
+          // Append validation details
+          msg += ' ' + resp.error.details.map(d => `${d.field}: ${d.message}`).join('; ')
+        }
+      } else if (resp?.message) {
+        msg = resp.message
+      }
+
+      setKesalahan(msg)
     } finally {
       setSedangMemuat(false)
     }

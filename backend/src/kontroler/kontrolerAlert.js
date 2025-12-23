@@ -330,113 +330,9 @@ async function dapatkanAlertAktif(req, res) {
   }
 }
 
-/**
- * DESKRIPSI: Handle request untuk acknowledge alert
- *
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
-async function acknowledgeAlert(req, res) {
-  try {
-    const userId = req.user.id;
-    const { id } = req.params;
-    const { catatan } = req.body;
+// (Duplicate acknowledge implementation removed — using service layer `layananAlert.acknowledgeAlert` instead to centralize business logic)
 
-    const alert = await Alert.findById(id);
-    if (!alert) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json({
-        success: false,
-        error: {
-          code: ERROR_CODE.NOT_FOUND,
-          message: 'Alert tidak ditemukan'
-        }
-      });
-    }
-
-    await alert.acknowledge(userId, catatan);
-
-    // Log aktivitas
-    logger.logUserActivity(userId, 'ALERT_ACKNOWLEDGED', {
-      alertId: alert._id,
-      serverId: alert.serverId,
-      ip: req.ip
-    });
-
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      data: alert.formatUntukDisplay(),
-      message: 'Alert berhasil di-acknowledge'
-    });
-
-  } catch (error) {
-    logger.logError('ALERT_ACKNOWLEDGE_FAILED', error, {
-      userId: req.user.id,
-      alertId: req.params.id
-    });
-
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: {
-        code: ERROR_CODE.INTERNAL_ERROR,
-        message: 'Gagal acknowledge alert'
-      }
-    });
-  }
-}
-
-/**
- * DESKRIPSI: Handle request untuk resolve alert
- *
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
-async function resolveAlert(req, res) {
-  try {
-    const userId = req.user.id;
-    const { id } = req.params;
-    const { catatan } = req.body;
-
-    const alert = await Alert.findById(id);
-    if (!alert) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json({
-        success: false,
-        error: {
-          code: ERROR_CODE.NOT_FOUND,
-          message: 'Alert tidak ditemukan'
-        }
-      });
-    }
-
-    await alert.resolve(userId, catatan);
-
-    // Log aktivitas
-    logger.logUserActivity(userId, 'ALERT_RESOLVED', {
-      alertId: alert._id,
-      serverId: alert.serverId,
-      ip: req.ip
-    });
-
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      data: alert.formatUntukDisplay(),
-      message: 'Alert berhasil di-resolve'
-    });
-
-  } catch (error) {
-    logger.logError('ALERT_RESOLVE_FAILED', error, {
-      userId: req.user.id,
-      alertId: req.params.id
-    });
-
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: {
-        code: ERROR_CODE.INTERNAL_ERROR,
-        message: 'Gagal resolve alert'
-      }
-    });
-  }
-}
+// (Duplicate resolve implementation removed — delegating to `layananAlert.resolveAlert` to centralize business logic)
 
 /**
  * DESKRIPSI: Handle request untuk evaluasi alert manual
@@ -528,45 +424,7 @@ async function evaluasiAlertManual(req, res) {
   }
 }
 
-/**
- * DESKRIPSI: Handle request untuk mendapatkan statistik alert
- *
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
-async function dapatkanStatistikAlert(req, res) {
-  try {
-    const userId = req.user.id;
-    const { hariTerakhir = 30 } = req.query;
-
-    const statistik = await Alert.dapatkanStatistikAlert(parseInt(hariTerakhir));
-
-    // Log aktivitas
-    logger.logUserActivity(userId, 'ALERT_STATISTICS_REQUEST', {
-      days: hariTerakhir,
-      ip: req.ip
-    });
-
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      data: statistik[0] || {},
-      meta: {
-        hariTerakhir: parseInt(hariTerakhir)
-      }
-    });
-
-  } catch (error) {
-    logger.logError('ALERT_STATISTICS_FAILED', error, { userId: req.user.id });
-
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: {
-        code: ERROR_CODE.INTERNAL_ERROR,
-        message: 'Gagal mengambil statistik alert'
-      }
-    });
-  }
-}
+// (Legacy model-based statistik implementation removed — using `layananAlert.dapatkanStatistikAlert` for better encapsulation)
 
 // Validation rules
 const validasiBuatKondisiAlert = [
@@ -623,22 +481,22 @@ const validasiResolveAlert = [
 async function acknowledgeAlert(req, res) {
   try {
     const userId = req.user.id;
-    const { idAlert } = req.params;
+    const { id } = req.params;
     const { catatan } = req.body;
 
     // Log aktivitas
     logger.logUserActivity(userId, 'ALERT_ACKNOWLEDGE_REQUEST', {
-      alertId: idAlert,
+      alertId: id,
       hasNote: !!catatan,
       ip: req.ip
     });
 
     // Panggil layanan untuk acknowledge alert
-    const alertDiacknowledge = await layananAlert.acknowledgeAlert(idAlert, userId, catatan);
+    const alertDiacknowledge = await layananAlert.acknowledgeAlert(id, userId, catatan);
 
     // Log berhasil
     logger.logUserActivity(userId, 'ALERT_ACKNOWLEDGE_SUCCESS', {
-      alertId: idAlert,
+      alertId: id,
       alertTitle: alertDiacknowledge.judul,
       ip: req.ip
     });
@@ -690,22 +548,22 @@ async function acknowledgeAlert(req, res) {
 async function resolveAlert(req, res) {
   try {
     const userId = req.user.id;
-    const { idAlert } = req.params;
+    const { id } = req.params;
     const { catatan } = req.body;
 
     // Log aktivitas
     logger.logUserActivity(userId, 'ALERT_RESOLVE_REQUEST', {
-      alertId: idAlert,
+      alertId: id,
       hasNote: !!catatan,
       ip: req.ip
     });
 
     // Panggil layanan untuk resolve alert
-    const alertDiresolve = await layananAlert.resolveAlert(idAlert, userId, catatan);
+    const alertDiresolve = await layananAlert.resolveAlert(id, userId, catatan);
 
     // Log berhasil
     logger.logUserActivity(userId, 'ALERT_RESOLVE_SUCCESS', {
-      alertId: idAlert,
+      alertId: id,
       alertTitle: alertDiresolve.judul,
       resolutionTime: alertDiresolve.durasiResolusi,
       ip: req.ip
@@ -722,7 +580,7 @@ async function resolveAlert(req, res) {
     // Log error
     logger.logError('ALERT_RESOLVE_ERROR', error, {
       userId: req.user.id,
-      alertId: req.params.idAlert,
+      alertId: req.params.id,
       ip: req.ip
     });
 

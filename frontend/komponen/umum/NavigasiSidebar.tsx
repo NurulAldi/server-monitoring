@@ -41,15 +41,15 @@ export default function NavigasiSidebar() {
   const { logout } = useAutentikasi()
 
   return (
-    <div className="bg-bg-secondary border-r border-bg-border w-64 min-h-screen flex flex-col">
-      <div className="p-6 border-b border-bg-border">
+    <div className="bg-white border-r border-slate-200 w-64 min-h-screen flex flex-col">
+      <div className="p-6 border-b border-slate-200">
         <div className="flex items-center gap-3">
-          <Activity className="w-8 h-8 text-accent-primary" />
+          <Activity className="w-8 h-8 text-blue-600" />
           <div>
-            <h2 className="text-heading font-bold text-text-primary">
+            <h2 className="text-heading font-bold text-slate-900">
               Dashboard
             </h2>
-            <p className="text-body-small text-text-secondary">
+            <p className="text-body-small text-slate-600">
               Monitoring Server
             </p>
           </div>
@@ -66,7 +66,10 @@ export default function NavigasiSidebar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={cn('nav-item', isActive && 'active')}
+                  className={cn(
+                    'nav-item',
+                    isActive && 'bg-blue-50 text-blue-600 font-semibold'
+                  )}
                 >
                   <Icon className="w-5 h-5" />
                   {item.label}
@@ -77,10 +80,10 @@ export default function NavigasiSidebar() {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-bg-border">
+      <div className="p-4 border-t border-slate-200">
         <button
           onClick={logout}
-          className="nav-item w-full justify-start hover:bg-status-critical/10 hover:text-status-critical"
+          className="nav-item w-full justify-start hover:bg-red-50 hover:text-red-600"
         >
           <LogOut className="w-5 h-5" />
           Keluar

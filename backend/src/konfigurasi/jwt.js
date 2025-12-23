@@ -30,10 +30,12 @@ const COOKIE_OPTIONS = {
 // Fungsi untuk generate JWT token
 function generateToken(payload) {
   try {
-    // Minimal payload - only id and email for auth
+    // Standard payload with userId, email, and peran for consistent middleware validation
     const tokenPayload = {
-      id: payload._id || payload.id,
+      userId: payload._id || payload.id, // Middleware expects 'userId' field
+      id: payload._id || payload.id, // Keep 'id' for backwards compatibility
       email: payload.email,
+      peran: payload.peran || payload.role || 'user', // Default to 'user' role
       iat: Math.floor(Date.now() / 1000),
     };
 
@@ -60,11 +62,12 @@ function verifyToken(token) {
       audience: 'monitoring-client'
     });
 
-    // Return decoded payload
+    // Return decoded payload with consistent field names
     return {
+      userId: decoded.userId || decoded.id, // Support both formats
       id: decoded.id,
       email: decoded.email,
-      peran: decoded.peran,
+      peran: decoded.peran || decoded.role || 'user', // Support both formats with default
       iat: decoded.iat,
       exp: decoded.exp
     };

@@ -5,34 +5,14 @@
 @import '../gaya/komponen.css';
 @import '../gaya/animasi.css';
 
-/* Tesla-Inspired Minimalist Dark Theme */
+/* Accessible Light Mode Theme - Tailwind Standard Palette */
 :root {
-  /* Core Colors */
-  --pure-black: #000000;
-  --deep-grey: #171a20;
-  --neutral-800: #222222;
-  --neutral-700: #393c41;
-  --neutral-600: #5c5e62;
-  --neutral-500: #8a8d91;
-  --neutral-400: #b8babf;
-  --high-contrast: #eeeeee;
-  --soft-white: #f4f4f4;
-
-  /* Accent Colors */
-  --accent-blue: #3e6ae1;
-  --accent-red: #e31937;
-  --success-green: #00d448;
-  --warning-amber: #f7c948;
-
-  /* Status Colors (Minimalist) */
-  --status-online: #00d448;
-  --status-warning: #f7c948;
-  --status-critical: #e31937;
-  --status-offline: #5c5e62;
-
-  /* Glassmorphism */
-  --glass-bg: rgba(23, 26, 32, 0.7);
-  --glass-border: rgba(184, 186, 191, 0.1);
+  /* Use Tailwind default colors for accessibility */
+  /* Status Colors */
+  --status-online: #10b981; /* emerald-500 */
+  --status-warning: #f59e0b; /* amber-500 */
+  --status-critical: #ef4444; /* red-500 */
+  --status-offline: #6b7280; /* gray-500 */
 }
 
 @layer base {
@@ -41,7 +21,7 @@
   }
 
   body {
-    @apply bg-pure-black text-high-contrast antialiased;
+    @apply bg-white text-slate-900 antialiased;
     font-family: 'Inter', 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     line-height: 1.7;
   }
@@ -53,42 +33,36 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-pure-black;
+    @apply bg-gray-100;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-neutral-600 rounded-full;
+    @apply bg-gray-400 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-neutral-500;
+    @apply bg-gray-500;
   }
 
   /* Clean Selection */
   ::selection {
-    @apply bg-neutral-500 text-high-contrast;
+    @apply bg-blue-200 text-slate-900;
   }
 
   /* Accessible Focus */
   *:focus-visible {
-    @apply outline-none ring-2 ring-accent-blue ring-offset-2 ring-offset-pure-black;
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-white;
   }
 }
 
 @layer utilities {
-  /* Glassmorphism */
+  /* Light Mode Card Backgrounds */
   .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
+    @apply bg-white border border-slate-200;
   }
 
   .glass-strong {
-    background: rgba(23, 26, 32, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(184, 186, 191, 0.15);
+    @apply bg-slate-50 border border-slate-200;
   }
 
   /* Smooth Transitions */

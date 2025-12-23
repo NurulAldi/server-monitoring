@@ -2,6 +2,7 @@
 export interface Pengguna {
   id: string
   email: string // Only email for login and SMTP notifications
+  peran?: string // User role (user, admin)
 }
 
 export interface TokenAuth {
@@ -24,7 +25,7 @@ export interface DataRegister {
 
 export interface ResponsLogin {
   pengguna: Pengguna
-  token: TokenAuth
+  tokens: TokenAuth
 }
 
 export interface ResponsRegister {

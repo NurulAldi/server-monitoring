@@ -40,14 +40,23 @@ const penggunaSchema = new mongoose.Schema({
     }
   },
 
+  // Password (hashed)
   kataSandi: {
     type: String,
-    required: [true, 'Password wajib diisi'],
+    // Required only if legacy hash is not present (support creating legacy records with kataSandiHash)
+    required: [function() { return !this.kataSandiHash; }, 'Password wajib diisi'],
     minlength: [8, 'Password minimal 8 karakter'],
     select: false // Jangan include password di query default
   },
 
-  // Security tracking for brute force protection
+  // Backwards-compatible: some older records might have kataSandiHash field
+  kataSandiHash: {
+    type: String,
+    select: false,
+    required: false
+  },
+
+  // Security tracking for brute force protection (both legacy and current fields)
   percobaanLoginGagal: {
     type: Number,
     default: 0,
@@ -55,10 +64,54 @@ const penggunaSchema = new mongoose.Schema({
     max: 5 // Max 5 percobaan gagal
   },
 
+  loginAttempts: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+
   dikunciSampai: {
     type: Date,
     default: null
   },
+
+  lockedUntil: {
+    type: Date,
+    default: null
+  },
+
+  // Account status fields expected by controller
+  statusAktif: {
+    type: Boolean,
+    default: true
+  },
+
+  emailTerverifikasi: {
+    type: Boolean,
+    default: true
+  },
+
+  // Email verification token (used during registration flow)
+  tokenVerifikasi: {
+    type: String,
+    select: false,
+    default: null
+  },
+
+  tokenVerifikasiExpires: {
+    type: Date,
+    default: null
+  },
+
+  // Refresh tokens for session management
+  tokenRefresh: [
+    {
+      token: { type: String },
+      createdAt: { type: Date, default: Date.now },
+      expiresAt: { type: Date },
+      deviceInfo: { type: String }
+    }
+  ],
 
   // Pengaturan email dan notifikasi
   pengaturanEmail: {
@@ -110,12 +163,13 @@ const penggunaSchema = new mongoose.Schema({
   },
 }, {
   // Options
-  timestamps: false,
+  timestamps: true,
   toJSON: {
     virtuals: true,
     transform: function(doc, ret) {
       // Don't include password in JSON output
       delete ret.kataSandi;
+      delete ret.kataSandiHash;
       return ret;
     }
   },
@@ -145,7 +199,14 @@ penggunaSchema.virtual('adalahAkunDikunci').get(function() {
  * @returns {Promise<boolean>} True jika password cocok
  */
 penggunaSchema.methods.verifikasiPassword = async function(passwordInput) {
-  return await bcrypt.compare(passwordInput, this.kataSandi);
+  // Support both current `kataSandi` field and legacy `kataSandiHash` field
+  const hash = this.kataSandi || this.kataSandiHash || '';
+  if (!hash) return false;
+  try {
+    return await bcrypt.compare(passwordInput, hash);
+  } catch (err) {
+    return false;
+  }
 };
 
 /**
@@ -161,13 +222,16 @@ penggunaSchema.methods.updatePassword = async function(passwordBaru) {
   // Hash password baru
   const saltRounds = 12;
   this.kataSandi = await bcrypt.hash(passwordBaru, saltRounds);
+  this.kataSandiHash = undefined; // drop legacy field if present
 
-  // Reset security tracking
+  // Reset security tracking (both legacy and current fields)
   this.percobaanLoginGagal = 0;
+  this.loginAttempts = 0;
   this.dikunciSampai = null;
+  this.lockedUntil = null;
 
   // Update timestamp
-  this.diperbaruiPada = new Date();
+  this.updatedAt = new Date();
 
   return await this.save();
 };
@@ -180,8 +244,14 @@ penggunaSchema.methods.updatePassword = async function(passwordBaru) {
  * @returns {Promise<Pengguna>} User yang sudah diupdate
  */
 penggunaSchema.methods.recordLoginBerhasil = async function() {
+  // Reset both legacy and current counters
   this.percobaanLoginGagal = 0;
+  this.loginAttempts = 0;
+
   this.dikunciSampai = null;
+  this.lockedUntil = null;
+
+  this.lastLoginAt = new Date();
 
   return await this.save();
 };
@@ -194,11 +264,15 @@ penggunaSchema.methods.recordLoginBerhasil = async function() {
  * @returns {Promise<Pengguna>} User yang sudah diupdate
  */
 penggunaSchema.methods.recordLoginGagal = async function() {
-  this.percobaanLoginGagal += 1;
+  // Increment both legacy and current counters
+  this.percobaanLoginGagal = (this.percobaanLoginGagal || 0) + 1;
+  this.loginAttempts = (this.loginAttempts || 0) + 1;
 
   // Lock account jika sudah 5 kali gagal (30 menit)
-  if (this.percobaanLoginGagal >= 5) {
-    this.dikunciSampai = new Date(Date.now() + 30 * 60 * 1000);
+  if ((this.percobaanLoginGagal >= 5) || (this.loginAttempts >= 5)) {
+    const until = new Date(Date.now() + 30 * 60 * 1000);
+    this.dikunciSampai = until;
+    this.lockedUntil = until;
   }
 
   return await this.save();
@@ -238,6 +312,8 @@ penggunaSchema.pre('save', async function(next) {
  * - email: Login query (most frequent)
  */
 penggunaSchema.index({ email: 1 }, { unique: true }); // Email unique for login
+
+
 
 // Export model
 const Pengguna = mongoose.model('Pengguna', penggunaSchema);

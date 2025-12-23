@@ -22,30 +22,42 @@ export function MetricCard({
   className
 }: PropsMetricCard) {
   return (
-    <div className={cn('metric-card', className)}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-data-label">{title}</span>
-        {icon && <div className="text-text-secondary">{icon}</div>}
+    <div className={cn(
+      'bg-white border border-slate-200 rounded-xl shadow-sm p-6 transition-all duration-300',
+      'hover:shadow-md hover:border-slate-300',
+      className
+    )}>
+      {/* Header: Label + Icon */}
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <span className="text-sm font-medium text-slate-500 uppercase tracking-wide">
+          {title}
+        </span>
+        {icon && (
+          <div className="text-slate-400">{icon}</div>
+        )}
       </div>
 
-      <div className="metric-value">{value}</div>
+      {/* Metric Value - Large and Bold */}
+      <div className="text-3xl font-bold text-slate-900 mb-2">
+        {value}
+      </div>
 
+      {/* Subtitle */}
       {subtitle && (
-        <div className="metric-label">{subtitle}</div>
+        <div className="text-sm text-slate-600 mb-2">{subtitle}</div>
       )}
 
+      {/* Trend Indicator */}
       {trend && (
         <div className={cn(
-          'flex items-center mt-2 text-xs',
-          trend.isPositive ? 'text-status-online' : 'text-status-critical'
+          'flex items-center gap-1 text-sm font-medium mt-4 pt-4 border-t border-slate-100',
+          trend.isPositive ? 'text-emerald-600' : 'text-red-600'
         )}>
-          <span className={cn(
-            'mr-1',
-            trend.isPositive ? '↑' : '↓'
-          )}>
+          <span className="text-base">
             {trend.isPositive ? '↑' : '↓'}
           </span>
-          {Math.abs(trend.value)}%
+          <span>{Math.abs(trend.value)}%</span>
+          <span className="text-xs text-slate-500 ml-1">vs last period</span>
         </div>
       )}
     </div>

@@ -1892,7 +1892,7 @@ async function kirimAlertRecovery(serverId, metrics) {
     // Kirim email recovery
     const hasilEmail = await layananEmail.kirimEmailRecoveryServer(
       user.email,
-      user.namaPengguna,
+      null,
       dataRecovery
     );
 
@@ -1984,7 +1984,7 @@ async function kirimRingkasanHarian(userId) {
     // Kirim email ringkasan
     const hasilEmail = await layananEmail.kirimEmailRingkasanHarian(
       user.email,
-      user.namaPengguna,
+      null,
       dataServer
     );
 
@@ -2032,7 +2032,7 @@ async function kirimRekomendasiAI(userId, dataRekomendasi) {
     // Kirim email rekomendasi
     const hasilEmail = await layananEmail.kirimEmailRekomendasiAI(
       user.email,
-      user.namaPengguna,
+      null,
       dataRekomendasi
     );
 

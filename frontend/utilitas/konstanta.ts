@@ -5,8 +5,8 @@ export const KONSTANTA = {
   DESKRIPSI: 'Sistem monitoring kesehatan server real-time',
 
   // API
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
-  SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001',
+  API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
+  SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5001',
 
   // Interval monitoring (dalam detik)
   INTERVAL_MONITORING: 60,

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Kirim request ke backend
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
     const response = await fetch(`${backendUrl}/ai/chat`, {
       method: 'POST',
       headers: {
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET() {
   try {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
     const response = await fetch(`${backendUrl}/ai/info`)
 
     if (!response.ok) {

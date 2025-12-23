@@ -47,13 +47,51 @@ async function registrasi(req, res) {
       ip: req.ip
     });
 
-    // Handle error berdasarkan tipe
+    // Handle specific error types
     if (error.message === 'Email sudah terdaftar') {
-      return res.status(HTTP_STATUS.CONFLICT).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         error: {
           code: ERROR_CODE.USER_EXISTS,
-          message: error.message,
+          message: 'Email sudah terdaftar. Silakan gunakan email lain atau login.',
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    // Handle duplicate key errors (stale indexes or db constraints)
+    if (error && error.code === 11000) {
+      const key = (error.keyPattern && Object.keys(error.keyPattern)[0]) || (error.message && (error.message.match(/StaleIndex:([a-zA-Z_]+)/) || [])[1]);
+      if (key && key.toLowerCase().includes('namapengguna')) {
+        logger.logError('REGISTRATION_FAILED_STALE_INDEX', error, { email: req.body.email, ip: req.ip });
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+          success: false,
+          error: {
+            code: ERROR_CODE.INTERNAL_ERROR,
+            message: 'Server konfigurasi tidak konsisten. Silakan hubungi administrator.',
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+
+      if (key && key.toLowerCase().includes('email')) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: {
+            code: ERROR_CODE.USER_EXISTS,
+            message: 'Email sudah terdaftar. Silakan gunakan email lain atau login.',
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+
+      // Unknown duplicate key
+      logger.logError('REGISTRATION_FAILED_DUPLICATE_KEY', error, { email: req.body.email, ip: req.ip });
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.INTERNAL_ERROR,
+          message: 'Terjadi konflik pada penyimpanan data. Silakan hubungi administrator.',
           timestamp: new Date().toISOString()
         }
       });
@@ -86,12 +124,12 @@ async function login(req, res) {
     // Panggil layanan autentikasi untuk login
     const hasil = await layananAutentikasi.login(email, kataSandi);
 
-    // Set cookie dengan token JWT
-    res.cookie('token', hasil.token, {
+    // Set HttpOnly cookie dengan access token for session management
+    res.cookie('auth_token', hasil.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 hari
+      sameSite: 'lax', // Allow cross-origin for dev; use 'strict' in production
+      maxAge: 15 * 60 * 1000 // 15 minutes (same as JWT access token)
     });
 
     // Log berhasil login
@@ -100,15 +138,18 @@ async function login(req, res) {
       ip: req.ip
     });
 
-    // Response sukses
+    // Response sukses with both token (for client storage) and user data
     res.status(HTTP_STATUS.OK).json({
       success: true,
       message: 'Login berhasil.',
       data: {
         pengguna: {
           id: hasil.pengguna.id,
-          email: hasil.pengguna.email
-        }
+          email: hasil.pengguna.email,
+          peran: hasil.pengguna.peran
+        },
+        token: hasil.token, // Include token for client-side storage as backup
+        expiresIn: 15 * 60 // Token expires in 15 minutes (seconds)
       },
       timestamp: new Date().toISOString()
     });
@@ -121,13 +162,24 @@ async function login(req, res) {
       ip: req.ip
     });
 
-    // Handle error berdasarkan tipe
+    // Handle specific error types
     if (error.message === 'Email atau password salah') {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
         success: false,
         error: {
           code: ERROR_CODE.INVALID_CREDENTIALS,
-          message: error.message,
+          message: 'Email atau password salah. Periksa kredensial Anda.',
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    if (error.message === 'Akun belum aktif') {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        error: {
+          code: ERROR_CODE.ACCOUNT_INACTIVE,
+          message: 'Akun Anda belum aktif. Silakan verifikasi email terlebih dahulu.',
           timestamp: new Date().toISOString()
         }
       });
@@ -148,7 +200,7 @@ async function login(req, res) {
 // Logout pengguna
 async function logout(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.userId || req.user?.id || 'anonymous';
 
     // Log aktivitas logout
     logger.logUserActivity(userId, 'LOGOUT', {
@@ -156,10 +208,17 @@ async function logout(req, res) {
     });
 
     // Panggil layanan autentikasi untuk logout
-    await layananAutentikasi.logout(userId);
+    if (userId !== 'anonymous') {
+      await layananAutentikasi.logout(userId);
+    }
 
-    // Clear cookie token
-    res.clearCookie('token');
+    // Clear auth_token cookie (match the cookie name set during login)
+    res.clearCookie('auth_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/'
+    });
 
     // Response sukses
     res.status(HTTP_STATUS.OK).json({
@@ -170,7 +229,7 @@ async function logout(req, res) {
 
   } catch (error) {
     // Log error logout
-    logger.logUserActivity(req.user?.id || 'anonymous', 'LOGOUT_FAILED', {
+    logger.logUserActivity(req.user?.userId || req.user?.id || 'anonymous', 'LOGOUT_FAILED', {
       error: error.message,
       ip: req.ip
     });
@@ -190,7 +249,7 @@ async function logout(req, res) {
 // Ambil profil pengguna saat ini
 async function ambilProfil(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId || req.user.id; // Support both formats
 
     // Log aktivitas ambil profil
     logger.logUserActivity(userId, 'PROFILE_ACCESS', {
@@ -200,13 +259,14 @@ async function ambilProfil(req, res) {
     // Panggil layanan autentikasi untuk ambil profil
     const pengguna = await layananAutentikasi.ambilProfil(userId);
 
-    // Response sukses (only id and email)
+    // Response sukses with id, email, and peran
     res.status(HTTP_STATUS.OK).json({
       success: true,
       data: {
         pengguna: {
           id: pengguna.id,
-          email: pengguna.email
+          email: pengguna.email,
+          peran: pengguna.peran || 'user' // Include peran for consistency
         }
       },
       timestamp: new Date().toISOString()
@@ -214,7 +274,7 @@ async function ambilProfil(req, res) {
 
   } catch (error) {
     // Log error ambil profil
-    logger.logUserActivity(req.user?.id || 'anonymous', 'PROFILE_ACCESS_FAILED', {
+    logger.logUserActivity(req.user?.userId || req.user?.id || 'anonymous', 'PROFILE_ACCESS_FAILED', {
       error: error.message,
       ip: req.ip
     });

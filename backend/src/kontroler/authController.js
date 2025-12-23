@@ -10,7 +10,7 @@ class AuthController {
    */
   async register(req, res) {
     try {
-      const { namaPengguna, email, kataSandi } = req.body;
+      const { email, kataSandi } = req.body;
       const clientInfo = {
         ip: req.ip,
         userAgent: req.get('User-Agent')
@@ -18,12 +18,10 @@ class AuthController {
 
       logger.info('User registration attempt', {
         email,
-        username: namaPengguna,
         ip: clientInfo.ip
       });
 
       const result = await authService.register({
-        namaPengguna,
         email,
         kataSandi,
         ...clientInfo
@@ -384,7 +382,6 @@ class AuthController {
         data: {
           user: {
             id: user._id,
-            namaPengguna: user.namaPengguna,
             email: user.email,
             peran: user.peran,
             avatar: user.avatar,

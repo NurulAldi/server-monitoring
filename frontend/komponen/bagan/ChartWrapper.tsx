@@ -22,29 +22,35 @@ export function ChartWrapper({
 }: ChartWrapperProps) {
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-heading-md text-high-contrast">{title}</h3>
+      {/* Chart Header - Strict 8px Grid */}
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div className="flex-1 space-y-1">
+          <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
           {subtitle && (
-            <p className="text-body-sm text-neutral-400 mt-1">{subtitle}</p>
+            <p className="text-sm text-slate-500">{subtitle}</p>
           )}
         </div>
         {currentValue !== undefined && (
           <div className="text-right">
-            <div className="text-4xl font-bold" style={{ color: statusColor }}>
+            <div className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-1">
+              Current
+            </div>
+            <div className="text-3xl font-bold text-slate-900">
               {currentValue.toFixed(1)}
-              {unit}
+              <span className="text-xl text-slate-600 ml-1">{unit}</span>
             </div>
           </div>
         )}
       </div>
 
+      {/* Chart Content */}
       {children}
 
+      {/* Live Indicator */}
       {isLive && (
-        <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-neutral-700">
-          <div className="w-2 h-2 rounded-full bg-success-green animate-pulse-subtle"></div>
-          <span className="text-body-sm text-neutral-400">Live</span>
+        <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-slate-200">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-subtle"></div>
+          <span className="text-sm text-slate-600">Live Data</span>
         </div>
       )}
     </div>
@@ -54,18 +60,18 @@ export function ChartWrapper({
 // Common status legend
 export function StatusLegend() {
   return (
-    <div className="flex items-center gap-6 mt-6 pt-4 border-t border-neutral-700">
+    <div className="flex items-center gap-6 mt-6 pt-4 border-t border-slate-200">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-success-green"></div>
-        <span className="text-body-sm text-neutral-400">Normal</span>
+        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+        <span className="text-body-sm text-slate-600">Normal</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-warning-amber"></div>
-        <span className="text-body-sm text-neutral-400">Warning</span>
+        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+        <span className="text-body-sm text-slate-600">Warning</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-accent-red"></div>
-        <span className="text-body-sm text-neutral-400">Critical</span>
+        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+        <span className="text-body-sm text-slate-600">Critical</span>
       </div>
     </div>
   )

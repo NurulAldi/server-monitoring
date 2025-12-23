@@ -11,28 +11,28 @@ interface StatusBadgeProps {
 
 const statusStyles = {
   online: {
-    bg: 'bg-success-green/10',
-    text: 'text-success-green',
-    border: 'border-success-green/20',
-    dot: 'bg-success-green',
+    bg: 'bg-emerald-100',
+    text: 'text-emerald-600',
+    border: 'border-emerald-200',
+    dot: 'bg-emerald-500',
   },
   warning: {
-    bg: 'bg-warning-amber/10',
-    text: 'text-warning-amber',
-    border: 'border-warning-amber/20',
-    dot: 'bg-warning-amber',
+    bg: 'bg-amber-100',
+    text: 'text-amber-600',
+    border: 'border-amber-200',
+    dot: 'bg-amber-500',
   },
   critical: {
-    bg: 'bg-accent-red/10',
-    text: 'text-accent-red',
-    border: 'border-accent-red/20',
-    dot: 'bg-accent-red',
+    bg: 'bg-red-100',
+    text: 'text-red-600',
+    border: 'border-red-200',
+    dot: 'bg-red-500',
   },
   offline: {
-    bg: 'bg-neutral-600/10',
-    text: 'text-neutral-500',
-    border: 'border-neutral-600/20',
-    dot: 'bg-neutral-500',
+    bg: 'bg-slate-100',
+    text: 'text-slate-500',
+    border: 'border-slate-200',
+    dot: 'bg-slate-400',
   },
 }
 

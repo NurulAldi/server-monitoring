@@ -548,11 +548,11 @@ function setupChatNamespace(io) {
         const joinData = {
           ruangId,
           penggunaId: socket.userId,
-          namaPengguna: socket.userData.nama,
+          namaPengguna: socket.userData?.email || 'Pengguna',
           peran: socket.userData.role,
           timestamp: new Date().toISOString(),
           pesertaAktif: await getRoomParticipants(chat, ruangId)
-        };
+        }; 
 
         chat.to(ruangId).emit('ruang:bergabung', joinData);
 
@@ -604,13 +604,13 @@ function setupChatNamespace(io) {
         pesanId: `msg_${Date.now()}_${socket.userId}`,
         ruangId,
         pengirimId: socket.userId,
-        namaPengirim: socket.userData.nama,
+        namaPengirim: socket.userData?.email || 'Pengguna',
         pesan,
         timestamp: new Date().toISOString(),
         tipe,
         mention,
         balasKe
-      };
+      }; 
 
       // Emit to room
       chat.to(ruangId).emit('pesan:baru', messageData);
@@ -618,7 +618,7 @@ function setupChatNamespace(io) {
       // If message mentions AI, trigger AI response
       if (mention.includes('ai_assistant') || pesan.toLowerCase().includes('ai')) {
         setTimeout(() => {
-          emitAIResponse(chat, ruangId, messageData.pesanId, pesan);
+          emitAIResponseToRoom(chat, ruangId, messageData.pesanId, pesan);
         }, 1000 + Math.random() * 2000); // Simulate AI thinking time
       }
 
@@ -635,10 +635,10 @@ function setupChatNamespace(io) {
         const typingData = {
           ruangId,
           penggunaId: socket.userId,
-          namaPengguna: socket.userData.nama,
+          namaPengguna: socket.userData?.email || 'Pengguna',
           sedangMengetik,
           timestamp: new Date().toISOString()
-        };
+        }; 
 
         socket.to(ruangId).emit('pengguna:mengetik', typingData);
       }
@@ -681,11 +681,11 @@ function setupAlertNamespace(io) {
         const acknowledgeData = {
           alertId,
           penggunaId: socket.userId,
-          namaPengguna: socket.userData.nama,
+          namaPengguna: socket.userData?.email || 'Pengguna',
           timestamp: new Date().toISOString(),
           catatan,
           tindakan: 'acknowledge'
-        };
+        }; 
 
         // Emit to all clients interested in this alert
         alert.emit('alert:diakui', acknowledgeData);
@@ -710,14 +710,14 @@ function setupAlertNamespace(io) {
         const resolveData = {
           alertId,
           penggunaId: socket.userId,
-          namaPengguna: socket.userData.nama,
+          namaPengguna: socket.userData?.email || 'Pengguna',
           timestamp: new Date().toISOString(),
           resolusi,
           kategoriResolusi,
           waktuPemulihan,
           pelajaran,
           preventifAction
-        };
+        }; 
 
         alert.emit('alert:diselesaikan', resolveData);
 
@@ -882,7 +882,7 @@ async function getRoomParticipants(namespace, roomName) {
  * @param {string} replyTo - Message ID to reply to
  * @param {string} userMessage - Original user message
  */
-function emitAIResponse(chatNamespace, roomId, replyTo, userMessage) {
+function emitAIResponseToRoom(chatNamespace, roomId, replyTo, userMessage) {
   // Simulate AI analysis based on message content
   let aiResponse = '';
   let recommendations = [];

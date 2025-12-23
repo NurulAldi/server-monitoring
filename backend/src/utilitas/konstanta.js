@@ -40,6 +40,16 @@ const STATUS_SERVER = {
   MAINTENANCE: 'maintenance'
 };
 
+// User roles (kept for backward compatibility)
+// Project was simplified to a single role in UI, but server-side logic
+// and tests may still expect the full set, so we keep these constants.
+const PERAN_PENGGUNA = {
+  SUPERADMIN: 'superadmin',
+  ADMIN: 'admin',
+  USER: 'user',
+  RESEARCHER: 'researcher'
+};
+
 // Status aktif pengguna
 const STATUS_AKTIF = {
   AKTIF: true,
@@ -136,6 +146,23 @@ const AI_PROVIDER = {
   OLLAMA: 'ollama'
 };
 
+// Validation rules used by server-side validators
+const VALIDATION_RULES = {
+  PASSWORD_MIN_LENGTH: 8,
+  USERNAME_MIN_LENGTH: 3,
+  USERNAME_MAX_LENGTH: 100,
+  EMAIL_MAX_LENGTH: 255
+};
+
+// Freeze important objects to prevent accidental mutation in runtime/tests
+Object.freeze(STATUS_KESEHATAN);
+Object.freeze(JENIS_ALERT);
+Object.freeze(TINGKAT_KEPARAHAN);
+Object.freeze(STATUS_SERVER);
+Object.freeze(PERAN_PENGGUNA);
+Object.freeze(VALIDATION_RULES);
+Object.freeze(THRESHOLD_DEFAULT);
+
 // Email templates
 const EMAIL_TEMPLATE = {
   ALERT_CRITICAL: 'alert_critical',
@@ -195,5 +222,6 @@ module.exports = {
   AI_PROVIDER,
   EMAIL_TEMPLATE,
   SOCKET_EVENT,
-  ENVIRONMENT
+  ENVIRONMENT,
+  VALIDATION_RULES
 };

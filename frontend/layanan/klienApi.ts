@@ -7,15 +7,35 @@ class KlienApi {
   private token: string | null = null
 
   constructor() {
+    // Normalize base URL to avoid accidental trailing '/api' which causes double '/api/api' issues
+    const normalizedBaseURL = (KONSTANTA.API_BASE_URL || '').replace(/\/api\/?$/i, '').replace(/\/$/, '') || '';
+
     this.client = axios.create({
-      baseURL: KONSTANTA.API_BASE_URL,
+      baseURL: normalizedBaseURL,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
       },
+      withCredentials: true, // enable cookies for auth flows
     })
 
     this.setupInterceptors()
+
+    // Enhance error handling: attach attemptedURL when a request fails without response
+    const origInterceptor = this.client.interceptors.response.handlers.slice()
+    this.client.interceptors.response.use(undefined, (error) => {
+      try {
+        const cfg = error.config || {}
+        const base = cfg.baseURL || normalizedBaseURL || ''
+        const url = cfg.url || ''
+        const sep = base.endsWith('/') || url.startsWith('/') ? '' : '/'
+        error.attemptedURL = `${base}${sep}${url}`
+        logger.error('HTTP request failed', { attemptedURL: error.attemptedURL, message: error.message })
+      } catch (e) {
+        logger.error('Failed to compute attemptedURL for failed request', e)
+      }
+      return Promise.reject(error)
+    })
   }
 
   private setupInterceptors() {

@@ -33,7 +33,7 @@ export function useAISocket(): AISocketContextType {
     }
 
     // Create AI socket connection to /ai namespace
-    const newAISocket = io(`${process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001'}/ai`, {
+    const newAISocket = io(`${process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5001'}/ai`, {
       auth: {
         token: token,
         userId: user.id

@@ -161,7 +161,7 @@ Buat file `.env.local` di direktori `frontend/`:
 
 ```env
 # API Configuration
-NEXT_PUBLIC_API_URL=http://localhost:5001/api
+NEXT_PUBLIC_API_URL=http://localhost:5001
 
 # Socket.IO Configuration
 NEXT_PUBLIC_SOCKET_URL=http://localhost:5001

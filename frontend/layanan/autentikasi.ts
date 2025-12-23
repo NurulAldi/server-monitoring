@@ -14,11 +14,30 @@ export class LayananAutentikasi {
   async login(data: DataLogin): Promise<ResponsLogin> {
     try {
       logger.info('Attempting login', { email: data.email })
-      const response = await klienApi.post<ResponsLogin>('/autentikasi/login', data)
+      // Backend endpoint: POST /api/pengguna/login (sets auth_token cookie)
+      const response = await klienApi.post<any>('/api/pengguna/login', data)
 
-      if (response.token) {
-        klienApi.setToken(response.token.accessToken)
-        logger.info('Login successful', { userId: response.pengguna.id })
+      // Response shape: { success: true, message, data: { user: { id, email, peran }, tokens: { accessToken, refreshToken, expiresIn, tokenType } } }
+      // Support both new (user) and legacy (pengguna) response formats
+      const userData = response?.data?.user || response?.data?.pengguna
+      const tokenData = response?.data?.tokens || { accessToken: response?.data?.token, refreshToken: null, expiresIn: 900, tokenType: 'Bearer' }
+      
+      if (userData) {
+        logger.info('Login successful', { userId: userData.id })
+        
+        // Store access token from response as backup (cookie is primary)
+        if (tokenData.accessToken) {
+          klienApi.setToken(tokenData.accessToken)
+        }
+        
+        return { 
+          pengguna: { 
+            id: userData.id, 
+            email: userData.email, 
+            peran: userData.peran 
+          }, 
+          tokens: tokenData 
+        }
       }
 
       return response
@@ -28,11 +47,19 @@ export class LayananAutentikasi {
     }
   }
 
-  async register(data: DataRegister): Promise<ResponsRegister> {
+  async register(data: any): Promise<ResponsRegister> {
     try {
       logger.info('Attempting registration', { email: data.email })
-      const response = await klienApi.post<ResponsRegister>('/autentikasi/register', data)
-      logger.info('Registration successful', { userId: response.pengguna.id })
+      // Backend endpoint: POST /api/pengguna/registrasi
+      const response = await klienApi.post<any>('/api/pengguna/registrasi', data)
+
+      // Support both new (user) and legacy (pengguna) response formats
+      const userData = response?.data?.user || response?.data?.pengguna
+      if (userData) {
+        logger.info('Registration successful', { userId: userData.id })
+        return { pengguna: userData, pesan: response.message } as any
+      }
+
       return response
     } catch (error) {
       logger.error('Registration failed', error)
@@ -42,7 +69,8 @@ export class LayananAutentikasi {
 
   async logout(): Promise<void> {
     try {
-      await klienApi.post('/autentikasi/logout')
+      await klienApi.post('/api/pengguna/logout')
+      // server will clear cookie; client clears any stored token for safety
       klienApi.setToken(null)
       logger.info('Logout successful')
     } catch (error) {
@@ -54,7 +82,7 @@ export class LayananAutentikasi {
 
   async refreshToken(): Promise<string> {
     try {
-      const response = await klienApi.post<{ accessToken: string }>('/autentikasi/refresh')
+      const response = await klienApi.post<{ accessToken: string }>('/api/auth/refresh')
       klienApi.setToken(response.accessToken)
       logger.info('Token refreshed successfully')
       return response.accessToken
@@ -90,8 +118,21 @@ export class LayananAutentikasi {
 
   async getProfil(): Promise<Pengguna> {
     try {
-      const response = await klienApi.get<Pengguna>('/pengguna/profil')
-      return response
+      // Protected endpoint which uses cookie-based auth
+      // Response shape: { success: true, data: { user: { id, email, peran } } }
+      const response = await klienApi.get<any>('/api/pengguna/profil')
+      
+      // Extract user data from nested response (support both new and legacy formats)
+      const userData = response?.data?.user || response?.data?.pengguna
+      if (userData) {
+        return {
+          id: userData.id,
+          email: userData.email,
+          peran: userData.peran
+        } as Pengguna
+      }
+      
+      return response as Pengguna
     } catch (error) {
       logger.error('Failed to get user profile', error)
       throw error

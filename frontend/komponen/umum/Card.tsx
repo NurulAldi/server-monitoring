@@ -15,8 +15,8 @@ export function Card({ children, className, hover = true, glass = false }: CardP
     <div
       className={cn(
         'rounded-xl p-8 transition-all duration-300 ease-in-out',
-        glass ? 'glass' : 'bg-deep-grey border border-neutral-700',
-        hover && 'hover:-translate-y-1 hover:border-neutral-600',
+        glass ? 'glass shadow-sm' : 'bg-white border border-slate-200 shadow-sm',
+        hover && 'hover:-translate-y-1 hover:shadow-md hover:border-slate-300',
         className
       )}
     >
@@ -32,7 +32,7 @@ interface CardHeaderProps {
 
 export function CardHeader({ children, className }: CardHeaderProps) {
   return (
-    <div className={cn('pb-6 border-b border-neutral-700', className)}>
+    <div className={cn('pb-6 border-b border-slate-200', className)}>
       {children}
     </div>
   )
@@ -45,7 +45,7 @@ interface CardTitleProps {
 
 export function CardTitle({ children, className }: CardTitleProps) {
   return (
-    <h3 className={cn('text-heading-md font-semibold text-high-contrast', className)}>
+    <h3 className={cn('text-heading-md font-semibold text-slate-900', className)}>
       {children}
     </h3>
   )
@@ -67,7 +67,7 @@ interface CardFooterProps {
 
 export function CardFooter({ children, className }: CardFooterProps) {
   return (
-    <div className={cn('pt-6 mt-6 border-t border-neutral-700', className)}>
+    <div className={cn('pt-6 mt-6 border-t border-slate-200', className)}>
       {children}
     </div>
   )

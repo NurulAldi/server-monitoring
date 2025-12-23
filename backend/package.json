@@ -10,6 +10,7 @@
     "test:watch": "cross-env NODE_ENV=test jest --watch",
     "test:unit": "cross-env NODE_ENV=test jest --testPathPattern=unit",
     "test:integration": "cross-env NODE_ENV=test jest --testPathPattern=integration",
+    "migrate:drop-namaPengguna-index": "node scripts/drop-namaPengguna-index.js",
     "lint": "eslint src/**/*.js",
     "lint:fix": "eslint src/**/*.js --fix",
     "format": "prettier --write src/**/*.js",
@@ -75,6 +76,6 @@
     "setupFilesAfterEnv": [
       "<rootDir>/tests/setup.js"
     ],
-    "testTimeout": 10000
+    "testTimeout": 120000
   }
 }

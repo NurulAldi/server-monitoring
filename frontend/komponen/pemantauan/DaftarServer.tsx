@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { Kartu, HeaderKartu, JudulKartu, KontenKartu } from '@/komponen/umum/Kartu'
 import { Tombol } from '@/komponen/umum/Tombol'
 
 interface Server {
@@ -58,66 +57,69 @@ export default function DaftarServer() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
-        return 'text-green-600 bg-green-100'
+        return 'text-emerald-700 bg-emerald-100 border border-emerald-300'
       case 'warning':
-        return 'text-yellow-600 bg-yellow-100'
+        return 'text-amber-700 bg-amber-100 border border-amber-300'
       case 'offline':
-        return 'text-accent-red bg-accent-red/10'
+        return 'text-red-700 bg-red-100 border border-red-300'
       default:
-        return 'text-neutral-400 bg-neutral-800'
+        return 'text-slate-600 bg-slate-100 border border-slate-300'
     }
   }
 
   return (
     <div className="space-y-4">
       {dataServer.map((server) => (
-        <Kartu key={server.id}>
-          <KontenKartu>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div>
-                  <h3 className="text-heading-md font-medium text-high-contrast">
-                    {server.nama}
-                  </h3>
-                  <p className="text-body-sm text-neutral-400">ID: {server.id}</p>
-                </div>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                    server.status
-                  )}`}
-                >
-                  {server.status.toUpperCase()}
-                </span>
-              </div>
+        <div
+          key={server.id}
+          className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 hover:shadow-md transition-all duration-300"
+        >
+          {/* Header: Server Name + Status + Action */}
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                {server.nama}
+              </h3>
+              <p className="text-sm text-slate-500">ID: {server.id}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span
+                className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold ${getStatusColor(
+                  server.status
+                )}`}
+              >
+                {server.status.toUpperCase()}
+              </span>
               <Link href={`/dashboard/pemantauan/${server.id}`}>
                 <Tombol variant="outline" size="sm">
                   Detail
                 </Tombol>
               </Link>
             </div>
+          </div>
 
-            {server.status !== 'offline' && (
-              <div className="mt-4 grid grid-cols-4 gap-4">
-                <div>
-                  <p className="text-data-label font-medium text-neutral-400">CPU</p>
-                  <p className="text-lg font-semibold">{server.cpu}%</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Memori</p>
-                  <p className="text-lg font-semibold">{server.memori}%</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Disk</p>
-                  <p className="text-lg font-semibold">{server.disk}%</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Uptime</p>
-                  <p className="text-sm font-semibold">{server.uptime}</p>
-                </div>
+          {/* Metrics Grid - Only show for active servers */}
+          {server.status !== 'offline' && (
+            <div className="grid grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">CPU</p>
+                <p className="text-2xl font-bold text-slate-900">{server.cpu}%</p>
               </div>
-            )}
-          </KontenKartu>
-        </Kartu>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">Memory</p>
+                <p className="text-2xl font-bold text-slate-900">{server.memori}%</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">Disk</p>
+                <p className="text-2xl font-bold text-slate-900">{server.disk}%</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">Uptime</p>
+                <p className="text-base font-semibold text-slate-700">{server.uptime}</p>
+              </div>
+            </div>
+          )}
+        </div>
       ))}
     </div>
   )

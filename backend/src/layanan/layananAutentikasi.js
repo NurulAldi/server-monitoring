@@ -17,23 +17,51 @@ async function registrasi(email, kataSandi) {
       throw new Error('Email sudah terdaftar');
     }
 
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(kataSandi, saltRounds);
-
     // Buat pengguna baru
+    // Store plaintext kataSandi and let model pre-save middleware hash it once
     const penggunaBaru = new Pengguna({
       email: email.toLowerCase().trim(),
-      kataSandi: hashedPassword
+      kataSandi: kataSandi
     });
 
     // Simpan ke database
-    const penggunaTersimpan = await penggunaBaru.save();
+    let penggunaTersimpan;
+    try {
+      penggunaTersimpan = await penggunaBaru.save();
+    } catch (saveErr) {
+      // Handle Mongo duplicate key errors (e.g., stale unique index on namaPengguna or duplicate email)
+      if (saveErr && saveErr.code === 11000) {
+        // Try to detect duplicated field
+        const duplicateKey = (saveErr.keyPattern && Object.keys(saveErr.keyPattern)[0]) ||
+                             (saveErr.keyValue && Object.keys(saveErr.keyValue)[0]) ||
+                             (saveErr.message && (saveErr.message.match(/index: ([^ ]+)_\d+/) || [])[1]);
 
-    // Generate JWT token (only id and email)
+        if (duplicateKey && duplicateKey.toLowerCase().includes('email')) {
+          // Surface as a friendly error for controller to map
+          throw new Error('Email sudah terdaftar');
+        }
+
+        if (duplicateKey && duplicateKey.toLowerCase().includes('namapengguna')) {
+          const err = new Error('StaleIndex:namaPengguna');
+          err.code = 11000;
+          throw err;
+        }
+
+        // Unknown duplicate key: return generic duplicate key error
+        const err = new Error('Duplicate key error');
+        err.code = 11000;
+        throw err;
+      }
+
+      // Other save errors — rethrow
+      throw saveErr;
+    }
+
+    // Generate JWT token with userId, email, and peran fields
     const token = generateToken({
       id: penggunaTersimpan._id,
-      email: penggunaTersimpan.email
+      email: penggunaTersimpan.email,
+      peran: 'user' // Default role for all users
     });
 
     // Log aktivitas
@@ -44,7 +72,8 @@ async function registrasi(email, kataSandi) {
     return {
       pengguna: {
         id: penggunaTersimpan._id,
-        email: penggunaTersimpan.email
+        email: penggunaTersimpan.email,
+        peran: 'user' // Include peran in response for frontend
       },
       token: token
     };
@@ -82,10 +111,11 @@ async function login(email, kataSandi) {
     // Record login berhasil
     await pengguna.recordLoginBerhasil();
 
-    // Generate JWT token (only id and email)
+    // Generate JWT token with userId, email, and peran fields
     const token = generateToken({
       id: pengguna._id,
-      email: pengguna.email
+      email: pengguna.email,
+      peran: 'user' // Default role for all users
     });
 
     // Log aktivitas
@@ -97,7 +127,8 @@ async function login(email, kataSandi) {
     return {
       pengguna: {
         id: pengguna._id,
-        email: pengguna.email
+        email: pengguna.email,
+        peran: 'user' // Include peran in response for frontend
       },
       token: token
     };
@@ -145,25 +176,8 @@ async function ambilProfil(userId) {
 
     return {
       id: pengguna._id,
-      email: pengguna.email
-    };
-
-  } catch (error) {
-    logger.logSystemError('AUTH_SERVICE_GET_PROFILE_ERROR', error, {
-      userId: userId
-    });
-    throw error;
-  }
-}
-
-// Verifikasi dan decode JWT token
-      nama: pengguna.nama,
       email: pengguna.email,
-      peran: pengguna.peran,
-      dibuatPada: pengguna.dibuatPada,
-      diperbaruiPada: pengguna.diperbaruiPada,
-      terakhirLogin: pengguna.terakhirLogin,
-      statusAktif: pengguna.statusAktif
+      peran: 'user' // Include peran for consistency
     };
 
   } catch (error) {
@@ -206,19 +220,13 @@ async function gantiPassword(userId, passwordLama, passwordBaru) {
     }
 
     // Verifikasi password lama
-    const passwordValid = await bcrypt.compare(passwordLama, pengguna.kataSandi);
+    const passwordValid = await pengguna.verifikasiPassword(passwordLama);
     if (!passwordValid) {
       throw new Error('Password lama salah');
     }
 
-    // Hash password baru
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(passwordBaru, saltRounds);
-
-    // Update password
-    pengguna.kataSandi = hashedPassword;
-    pengguna.diperbaruiPada = new Date();
-    await pengguna.save();
+    // Update password using model helper (handles hashing and reset)
+    await pengguna.updatePassword(passwordBaru);
 
     // Log aktivitas
     logger.logUserActivity(userId, 'USER_PASSWORD_CHANGED', {});
@@ -241,14 +249,8 @@ async function resetPassword(userId, passwordBaru) {
       throw new Error('Pengguna tidak ditemukan');
     }
 
-    // Hash password baru
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(passwordBaru, saltRounds);
-
-    // Update password
-    pengguna.kataSandi = hashedPassword;
-    pengguna.diperbaruiPada = new Date();
-    await pengguna.save();
+    // Update password using model helper (handles hashing and reset)
+    await pengguna.updatePassword(passwordBaru);
 
     // Log aktivitas
     logger.logUserActivity(userId, 'USER_PASSWORD_RESET', {

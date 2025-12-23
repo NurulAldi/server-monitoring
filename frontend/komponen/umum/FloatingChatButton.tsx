@@ -64,7 +64,7 @@ export function FloatingChatButton() {
       {isOpen && (
         <div
           onClick={toggleChat}
-          className="fixed inset-0 bg-pure-black/50 z-40 md:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden transition-opacity duration-300"
           aria-hidden="true"
         />
       )}

@@ -12,18 +12,12 @@ class AuthService {
    * Register a new user
    */
   async register(userData) {
-    const { namaPengguna, email, kataSandi, ip, userAgent } = userData;
+    const { email, kataSandi, ip, userAgent } = userData;
 
     // Check if email already exists
     const existingUser = await Pengguna.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       throw new Error('Email sudah terdaftar');
-    }
-
-    // Check if username already exists
-    const existingUsername = await Pengguna.findOne({ namaPengguna });
-    if (existingUsername) {
-      throw new Error('Nama pengguna sudah digunakan');
     }
 
     // Hash password
@@ -35,7 +29,6 @@ class AuthService {
 
     // Create new user
     const penggunaBaru = new Pengguna({
-      namaPengguna,
       email: email.toLowerCase(),
       kataSandiHash,
       peran: 'user',
@@ -50,7 +43,7 @@ class AuthService {
 
     // Send verification email
     try {
-      await layananEmail.kirimEmailVerifikasi(email, tokenVerifikasi);
+      await layananEmail.kirimEmailVerifikasi(email, null, tokenVerifikasi);
     } catch (emailError) {
       // Log email error but don't fail registration
       console.error('Failed to send verification email:', emailError);
@@ -59,7 +52,6 @@ class AuthService {
     return {
       user: {
         id: penggunaBaru._id,
-        namaPengguna: penggunaBaru.namaPengguna,
         email: penggunaBaru.email,
         peran: penggunaBaru.peran
       },
@@ -131,7 +123,6 @@ class AuthService {
     return {
       user: {
         id: pengguna._id,
-        namaPengguna: pengguna.namaPengguna,
         email: pengguna.email,
         peran: pengguna.peran,
         avatar: pengguna.avatar,
@@ -148,6 +139,10 @@ class AuthService {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+      // Debug logging for tests
+      const { logger } = require('../utilitas/logger');
+      logger.error('verifyEmail decoded', { decoded });
+
       if (decoded.type !== 'email_verification') {
         throw new Error('Invalid token type');
       }
@@ -156,6 +151,8 @@ class AuthService {
         email: decoded.email,
         tokenVerifikasi: token
       });
+
+      logger.error('verifyEmail found pengguna', { found: !!pengguna, penggunaId: pengguna?._id });
 
       if (!pengguna) {
         throw new Error('Invalid or expired token');
@@ -174,7 +171,6 @@ class AuthService {
         message: 'Email berhasil diverifikasi',
         user: {
           id: pengguna._id,
-          namaPengguna: pengguna.namaPengguna,
           email: pengguna.email
         }
       };
